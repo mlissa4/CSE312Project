@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'; // Import necessary hooks
-import { Container, Typography, Button } from '@mui/material';  // Import Material UI components
+import { Container, Typography, Button, AppBar,Toolbar } from '@mui/material';  // Import Material UI components
 import './App.css';
 
 function App() {
@@ -31,6 +31,10 @@ function App() {
 
     return (
         <Container>
+            <AppBar>
+                <Toolbar>HOME</Toolbar>
+            </AppBar>
+            <br></br>
             <div className="App">
             <Typography variant='h2'>Welcome to our 312 App</Typography>
             <br></br>
