@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Register</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+        }
+        .container {
+            display: flex;
+            width: 100%;
+        }
+        .half {
+            width: 50%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .register {
+            background-color: #f1f1f1;
+        }
+        .login {
+            background-color: #e0e0e0;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: 5px;
+        }
+        input {
+            margin-bottom: 10px;
+            padding: 8px;
+            font-size: 1rem;
+        }
+        button {
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Register Section -->
+        <div class="half register">
+            <h2>Register</h2>
+            <form action="/register" method="POST">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
+
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+
+                <button type="submit">Register</button>
+            </form>
+        </div>
+
+        <!-- Login Section -->
+        <div class="half login">
+            <h2>Login</h2>
+            <form action="/login" method="POST">
+                <label for="login_username">Username</label>
+                <input type="text" id="login_username" name="login_username" required>
+
+                <label for="login_password">Password</label>
+                <input type="password" id="login_password" name="login_password" required>
+
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
