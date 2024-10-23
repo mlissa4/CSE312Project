@@ -42,12 +42,13 @@ def login():
     password = request.form.get("login_password")
     user = user_datastore.find_user(email=username)
     if(username == "" or user == None):
-        return jsonify({"error": "Username and fuck"}),404
+        return jsonify({"error": "Invalid Username"}),404
     # if not bcrpyt.check_password_hash(user.password, password):
     if not verify_password(password, user.password):
         return jsonify({"error": "Invalid username or password"}), 404
 
-    return jsonify({"correct": "pass"}), 200
+    return Redirect("/",code=302)
+    # return jsonify({"correct": "pass"}), 200
 
 Security = Security(app,user_datastore)
 @app.after_request
