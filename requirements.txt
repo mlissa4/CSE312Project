@@ -1,0 +1,10 @@
+setuptools
+Flask==2.0.1
+Werkzeug==2.2.2
+Flask-PyMongo==2.3.0
+wtforms==2.3.3
+Flask-WTF==1.0.0
+flask-security-too== 4.0.0
+Flask-Bcrypt==1.0.1
+mongoengine==0.20.0
+bcrypt
