@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, redirect
 from flask_security import UserMixin, RoleMixin, Security, MongoEngineUserDatastore
 from flask_pymongo import PyMongo
 from mongoengine import connect, Document
@@ -47,7 +47,7 @@ def login():
     if not verify_password(password, user.password):
         return jsonify({"error": "Invalid username or password"}), 404
 
-    return Redirect("/",code=302)
+    return redirect("/",code=302)
     # return jsonify({"correct": "pass"}), 200
 
 Security = Security(app,user_datastore)
@@ -82,7 +82,9 @@ def register():
     user_datastore.create_user(email=username, password=password)
     user_datastore.commit()
 
-    return f"{password}" #for testing should be removed 
+    return redirect("/login_page",code=302)
+
+    # return f"{password}" #for testing should be removed 
 
 
 if __name__ == '__main__':

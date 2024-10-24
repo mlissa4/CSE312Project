@@ -6,8 +6,17 @@
     <title>Flask App</title>
 </head>
 <body>
-    <h1>Welcome to Dress Up Kitty!</h1>
-    <button class="btn btn-outline-light" type="button" onclick="window.location.href='/login_page'">Login</button>
-    <img width="100px" src="{{ url_for('static', filename='images/download.jpg') }}" alt="Kitty">
+    <div class="nav-bar">
+        <div style="max-width:1200px;margin:auto">
+            <button>
+                <img width="100px" src="{{ url_for('static', filename='images/download.jpg') }}" alt="Kitty">
+            </button>
+            <h1>Dress Up Kitty</h1>
+            <button onclick="window.location.href='/login_page'">Register</button>
+        </div>
+    </div>
+    <div>
+        <h1>Welcome to Dress Up Kitty!</h1>
+    </div>
 </body>
 </html>
