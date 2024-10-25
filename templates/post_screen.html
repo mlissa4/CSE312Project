@@ -2,9 +2,77 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Post Screen</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .centered-box {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .centered-box h2 {
+            margin-bottom: 20px;
+        }
+
+        .centered-box input[type="file"],
+        .centered-box textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .centered-box button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+        }
+
+        .centered-box button:hover {
+            background-color: #45a049;
+        }
+
+        .centered-box button.return {
+            background-color: #f44336;
+            margin-top: 10px;
+        }
+
+        .centered-box button.return:hover {
+            background-color: #e53935;
+        }
+    </style>
 </head>
 <body>
-    <button onclick="window.location.href='/'">Return</button>
+    <div class="centered-box">
+        <h2>Upload an Image</h2>
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="image" accept="image/*" required>
+            <textarea name="description" rows="4" placeholder="Add a description..." required></textarea>
+            <button type="submit">Submit</button>
+        </form>
+        <button class="return" onclick="window.location.href='/'">Return</button>
+    </div>
 </body>
 </html>

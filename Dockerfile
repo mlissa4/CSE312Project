@@ -1,5 +1,6 @@
 FROM python:3.8
 ENV HOME /root
+ENV PYTHONUNBUFFERED=1
 WORKDIR /root
 COPY . .
 RUN pip install -r requirements.txt
