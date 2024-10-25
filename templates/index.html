@@ -4,17 +4,101 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flask App</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Navbar Styles */
+        .nav-bar {
+            background-color: #f3f3f3;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 10px 20px;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            width: 80px;
+            margin-right: 10px;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            color: #333;
+            margin: 0;
+        }
+
+        .nav-buttons button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-left: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-buttons button:hover {
+            background-color: #45a049;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .logo img {
+                width: 60px;
+            }
+
+            .logo h1 {
+                font-size: 20px;
+            }
+
+            .nav-buttons button {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+    </style>
 </head>
 <body>
+    <!-- Navbar -->
     <div class="nav-bar">
-        <div style="max-width:1200px;margin:auto">
-            <button>
-                <img width="100px" src="{{ url_for('static', filename='images/download.jpg') }}" alt="Kitty">
-            </button>
-            <h1>Dress Up Kitty</h1>
-            <button onclick="window.location.href='/login_page'">Register</button>
+        <div class="nav-container">
+            <div class="logo">
+                <button>
+                    <img src="{{ url_for('static', filename='images/download.jpg') }}" alt="Kitty">
+                </button>
+                <h1>Dress Up Kitty</h1>
+            </div>
+            <div class="nav-buttons">
+                <button onclick="window.location.href='/login_page'">Register</button>
+                <button onclick="window.location.href='/login_page'">Login</button>
+            </div>
         </div>
     </div>
+
+    <!-- Main Content -->
     <div>
         <h1>Welcome to Dress Up Kitty!</h1>
     </div>
