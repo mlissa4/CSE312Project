@@ -86,6 +86,19 @@ def register():
 
     # return f"{password}" #for testing should be removed 
 
+#route to post
+@app.route('/post_screen', methods=["GET"])
+def post_redirect():
+    #if auth_token valid, redirect to /post_screen
+        #hash auth token and check if hashed token exists in db
+    #if not, error 401 unauthorized
+    return redirect("/post_screen",code=302)
+
+#need to build post_screen.html
+@app.route('/post_screen')
+def post_screen():
+
+    return render_template('post_screen.html'), 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
