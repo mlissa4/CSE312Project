@@ -8,8 +8,8 @@ services:
     build: .
     environment: 
       WAIT_HOSTS: mongo:27017
-      secret_key: replace
-      salt: replace
+      secret_key: 47690a6a027a02d74596cf224e46e931f1f36f65ae00f45de956b69fbb05d2d79ec241eba776aa2066437442a1f52271
+      salt: fcaa3607afc73166dc2afcc8dc7459bcf950e1d2456eca17956ee659c4e32f18
     ports: 
       - "8080:8080"
     

@@ -7,4 +7,4 @@ Flask-WTF==1.0.0
 flask-security-too== 4.0.0
 Flask-Bcrypt==1.0.1
 mongoengine==0.20.0
-bcrypt
+bcrypt==3.2.0
