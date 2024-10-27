@@ -134,13 +134,16 @@ def upload_image():
     image_filename = f"image_{uuid.uuid4()}"
     image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
     author = "Guest"
+    Reviewers = []
     data = {
         "file_name": image_filename,
         "Description": description,
         "Author": author,
         "Total_rating": 5,
         "reviews": 1,
-        "Average_rating": 5
+        "Average_rating": 5,
+        "Reviwers": Reviewers
+
     }
     posts_db.insert_one(data)
     files_in_upload_folder = os.listdir(app.config['UPLOAD_FOLDER'])
