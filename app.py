@@ -160,13 +160,19 @@ def upload_image():
 
 
 #route to post
-@app.route('/post_screen', methods=["GET"])
+@app.route('/post_redirect', methods=["GET"])
 def post_redirect():
     #if auth_token valid, redirect to /post_screen
         #hash auth token and check if hashed token exists in db
     #if not, error 401 unauthorized
-    return render_template('post_screen.html'), 200
-    return redirect("/post_screen",code=302)
+    cookie_auth = request.cookies.get("auth_token")
+    if cookie_auth:
+        hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
+        finding = auth.find_one({"auth_token": hash_cookie_auth})
+        if finding:
+            return redirect("/post_screen",code=302)
+
+    return Response("Unauthorized", status=401)
 
 #need to build post_screen.html
 @app.route('/post_screen')
