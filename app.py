@@ -146,7 +146,6 @@ def upload_image():
         "Average_rating": 5
     }
     posts_db.insert_one(data)
-    # List all files in the upload folder and print them to the console
     files_in_upload_folder = os.listdir(app.config['UPLOAD_FOLDER'])
     print("Files in the upload folder:")
     for file in files_in_upload_folder:
@@ -184,7 +183,7 @@ def review_page(file):
         rating = int(request.form.get('rating'))
         total_rating = post.get('Total_rating', 0) + rating
         review_count = post.get('reviews', 0) + 1
-        average_rating = total_rating / review_count
+        average_rating = round(total_rating/review_count,1)
         posts_db.update_one({"file_name":file},{"$set": {"Total_rating": total_rating, "Average_rating": average_rating, "reviews": review_count}})
         return redirect("/",code=302)
 
