@@ -66,6 +66,43 @@
             background-color: #45a049;
         }
 
+        /* Gallery Styles */
+        .gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .image-box {
+            width: 220px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: #f9f9f9;
+        }
+
+        .image-box img {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        .description {
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        /* Star Rating Styles (Static) */
+        .star-rating {
+            font-size: 18px;
+            color: #FFD700; /* Gold color for stars */
+            margin-top: 5px;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .nav-container {
@@ -104,9 +141,6 @@
                 <button id="logout" onclick="logoutFeature()">Logout</button>
                 <button onclick="window.location.href='/post_screen'">Posting</button>
             </div>
-            <!-- Inside your index.html -->
-
-
         </div>
     </div>
 
@@ -114,11 +148,25 @@
     <div style="padding: 20px; text-align: center;">
         <h1>Welcome to Dress Up Kitty!</h1>
     </div>
-    <div class="gallery">
-        {% for image in images %}
-            <img src="{{ url_for('static', filename='uploads/' + image) }}" alt="{{ image }}" width="200">
-        {% endfor %}
-    </div>
+
+        <!-- Image Gallery -->
+        <div class="gallery">
+            {% for post in posts %}
+            <div class="image-box">
+                <!-- Display the image -->
+                <img src="{{ url_for('static', filename='uploads/' + post['file_name']) }}" alt="Image" width="200">
+                
+                <!-- Display additional details -->
+                <div class="description">{{ post['Description'] }}</div>
+                <div class="author">Author: {{ post['Author'] }}</div>
+                <div class="average-rating">Average Rating: {{ post['Average_rating'] }}</div>
+                <div class="star-rating">★ ★ ★ ★ ★</div>
+                <button onclick="window.location.href='/review/{{ post['file_name'] }}'">leave a review</button>
+            </div>
+        
+            {% endfor %}
+        </div>
+
     <script src="/static/js/login.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, redirect, Response
+from flask import Flask, render_template, jsonify, request, redirect, Response, flash
 from flask_security import UserMixin, RoleMixin, Security, MongoEngineUserDatastore
 from flask_pymongo import PyMongo
 from pymongo import MongoClient
@@ -8,6 +8,7 @@ from flask_security.utils import hash_password, verify_password
 import os
 import secrets
 import hashlib
+import uuid
 from mongoengine.fields import (
     BinaryField,
     BooleanField,
@@ -22,6 +23,7 @@ from mongoengine.fields import (
 mongo_clinet = MongoClient('mongo')
 db = mongo_clinet["user_auth"]
 auth= db["auth"] #to access this database is the same way you do for the homework 
+posts_db = db["posts"]
 
 app = Flask(__name__)
 
@@ -87,14 +89,11 @@ def headerSecurity(response): # make sure every response has nosniff (global)
 
 @app.route('/')
 def home():
-    # List all files in the uploads folder
-    files_in_upload_folder = os.listdir(app.config['UPLOAD_FOLDER'])
+    posts = list(posts_db.find())
     
-    # Filter only image files (e.g., .png, .jpg, .jpeg, .gif)
-    image_files = [f for f in files_in_upload_folder if f.endswith(('.png', '.jpg', '.jpeg', '.gif'))]
+    return render_template('index.html',posts=posts)
 
-    #Pass the image filenames to the template
-    return render_template('index.html',images=image_files)
+
 @app.route('/login_page')
 def login_page():
     return render_template('login.html'), 200
@@ -125,24 +124,40 @@ def upload_image():
     image = request.files['image']
     description = request.form['description']
 
-    if image and description:
-        # Save the image to the specified upload folder
-        image_filename = image.filename
-        image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
-
-        # Print the description
-        print(f"Description: {description}")
-
-        # List all files in the upload folder and print them to the console
-        files_in_upload_folder = os.listdir(app.config['UPLOAD_FOLDER'])
-        print("Files in the upload folder:")
-        for file in files_in_upload_folder:
-            print(file)
-
-            #Redirect back to the homepage or another route
+    if not image.filename.endswith(('.png', '.jpg', '.jpeg', '.gif')):
+        flash('Error: incorect image format')
         return redirect("/", code=302)
-    else:
-        return 'Error: Image and description are required!'
+
+    if not image and not description:
+        flash('Error: Image and description are required!')
+        return redirect("/", code=302)
+    image_filename = f"image_{uuid.uuid4()}"
+    image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+    author = "Guest"
+
+    # Print the description
+    print(f"Description: {description}")
+    data = {
+        "file_name": image_filename,
+        "Description": description,
+        "Author": author,
+        "Total_rating": 5,
+        "reviews": 1,
+        "Average_rating": 5
+    }
+    posts_db.insert_one(data)
+    # List all files in the upload folder and print them to the console
+    files_in_upload_folder = os.listdir(app.config['UPLOAD_FOLDER'])
+    print("Files in the upload folder:")
+    for file in files_in_upload_folder:
+        print(file)
+    for thing in posts_db.find():
+        print(thing)
+
+        #Redirect back to the homepage or another route
+    return redirect("/", code=302)
+    
+
 
 
 #route to post
@@ -157,8 +172,22 @@ def post_redirect():
 #need to build post_screen.html
 @app.route('/post_screen')
 def post_screen():
-
     return render_template('post_screen.html'), 200
+
+@app.route('/review/<file>', methods = {"GET","POST"})
+def review_page(file):
+    if request.method == "GET":
+        post = posts_db.find_one({"file_name":file})
+        return render_template('review_page.html',post=post), 200
+    if request.method == "POST":
+        post = posts_db.find_one({"file_name":file})
+        rating = int(request.form.get('rating'))
+        total_rating = post.get('Total_rating', 0) + rating
+        review_count = post.get('reviews', 0) + 1
+        average_rating = total_rating / review_count
+        posts_db.update_one({"file_name":file},{"$set": {"Total_rating": total_rating, "Average_rating": average_rating, "reviews": review_count}})
+        return redirect("/",code=302)
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
