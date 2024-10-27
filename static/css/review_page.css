@@ -9,7 +9,7 @@ body {
     height: 100vh;
 }
 
-.review-container {
+.review_container {
     background-color: #ffffff;
     padding: 30px;
     border-radius: 10px;
@@ -19,24 +19,24 @@ body {
     text-align: center;
 }
 
-.review-container h1 {
+.review_container h1 {
     font-size: 1.8em;
     color: #333;
     margin-bottom: 20px;
 }
 
-.review-details {
+.review_details {
     margin-bottom: 20px;
 }
 
-.review-details img {
+.review_details img {
     width: 100%;
     max-width: 200px;
     border-radius: 8px;
     margin-bottom: 10px;
 }
 
-.review-details p {
+.review_details p {
     font-size: 1rem;
     color: #555;
     margin: 5px 0;
@@ -78,7 +78,6 @@ button[type="submit"] {
     border-radius: 5px;
     font-size: 1rem;
     font-weight: bold;
-    cursor: pointer;
     transition: background-color 0.3s ease;
     width: 100%;
     max-width: 200px;

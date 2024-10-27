@@ -6,13 +6,13 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
 <body>
-    <div class="nav-bar">
-        <div class="nav-container">
+    <div class="nav_bar">
+        <div class="nav_container">
             <div class="logo">
                     <img src="{{ url_for('static', filename='images/download.jpg') }}" alt="Kitty">
                 <h1>Dress Up Kitty</h1>
             </div>
-            <div class="nav-buttons">
+            <div class="nav_buttons">
                 <button onclick="window.location.href='/login_page'">Login</button>
                 <button id="logout" onclick="logoutFeature()">Logout</button>
                 <button onclick="window.location.href='/post_redirect'">Posting</button>
@@ -31,8 +31,8 @@
             
             <div class="description">{{ post['Description'] }}</div>
             <div class="author">Author: {{ post['Author'] }}</div>
-            <div class="average-rating">Average Rating: {{ post['Average_rating'] }}</div>
-            <div class="star-rating">★ ★ ★ ★ ★</div>
+            <div class="average_rating">Average Rating: {{ post['Average_rating'] }}</div>
+            <div class="star">★ ★ ★ ★ ★</div>
             
             <button onclick="window.location.href='/review/{{ post['file_name'] }}'">Leave a Review</button>
         </div>

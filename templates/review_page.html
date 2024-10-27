@@ -6,10 +6,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/review_page.css') }}">
 </head>
     <body>
-        <div class="review-container">
+        <div class="review_container">
             <h1>Leave a Review for "{{ post['Description'] }}"</h1>
             
-            <div class="review-details">
+            <div class="review_details">
                 <img src="{{ url_for('static', filename='uploads/' + post['file_name']) }}" alt="Image">
                 <p><strong>Author:</strong> {{ post['Author'] }}</p>
                 <p><strong>Average Rating:</strong> {{ post['Average_rating'] }}</p>
