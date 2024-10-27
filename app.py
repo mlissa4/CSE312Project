@@ -121,6 +121,16 @@ def register():
 
 @app.route('/upload', methods=['POST'])
 def upload_image():
+
+    cookie_auth = request.cookies.get("auth_token")
+    if cookie_auth:
+        hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
+        User = auth.find_one({"auth_token": hash_cookie_auth})
+    if not User:
+        flash('Error: Not Logged In')
+        return redirect("/", code=302)
+    
+    
     image = request.files['image']
     description = html.escape(request.form['description'])
 
@@ -133,8 +143,14 @@ def upload_image():
         return redirect("/", code=302)
     image_filename = f"image_{uuid.uuid4()}"
     image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
-    author = "Guest"
+    cookie_auth = request.cookies.get("auth_token")
+    if cookie_auth:
+        hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
+        finding = auth.find_one({"auth_token": hash_cookie_auth})
+    author = User["username"]
+    print(f"AUTHOR === {author}")
     Reviewers = []
+    Reviewers.append(author)
     data = {
         "file_name": image_filename,
         "Description": description,
@@ -181,16 +197,30 @@ def post_screen():
 
 @app.route('/review/<file>', methods = {"GET","POST"})
 def review_page(file):
+    cookie_auth = request.cookies.get("auth_token")
+    if cookie_auth:
+        hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
+        User = auth.find_one({"auth_token": hash_cookie_auth})
+    if not User:
+        return{'Error: Not Logged in'}
+        return redirect("/", code=302)
+    post = posts_db.find_one({"file_name":file})
+    Reviwers = post["Reviwers"]
+    if User["username"] in Reviwers:
+        return{'Error: Already Reviewed Post'}
     if request.method == "GET":
-        post = posts_db.find_one({"file_name":file})
         return render_template('review_page.html',post=post), 200
     if request.method == "POST":
-        post = posts_db.find_one({"file_name":file})
+        print("GETING REVIEW !!!!!!!!!!!!!!!!")
+        print(f"Reviwers BEFORE {Reviwers}")
+        print(f"USER THAT MADE REVIEW {User['username']}")
         rating = int(request.form.get('rating'))
         total_rating = post.get('Total_rating', 0) + rating
         review_count = post.get('reviews', 0) + 1
         average_rating = round(total_rating/review_count,1)
-        posts_db.update_one({"file_name":file},{"$set": {"Total_rating": total_rating, "Average_rating": average_rating, "reviews": review_count}})
+        Reviwers.append(User["username"])
+        print(f"Reviwers AFTER {Reviwers}")
+        posts_db.update_one({"file_name":file},{"$set": {"Total_rating": total_rating, "Average_rating": average_rating, "reviews": review_count, "Reviwers":Reviwers }})
         return redirect("/",code=302)
 
 
