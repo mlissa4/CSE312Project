@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leave a Review</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/review_page.css') }}">
 </head>
-<body>
-    <h1>Leave a Review for "{{ post['Description'] }}"</h1>
-    
-    <div>
-        <img src="{{ url_for('static', filename='uploads/' + post['file_name']) }}" alt="Image" width="200">
-        <p><strong>Author:</strong> {{ post['Author'] }}</p>
-        <p><strong>Average Rating:</strong> {{ post['Average_rating'] }}</p>
-    </div>
-    
-    <form method="POST">
-        <label for="rating">Your Rating (1-5):</label>
-        <input type="number" name="rating" min="1" max="5" required>
-        <button type="submit">Submit Review</button>
-    </form>
-</body>
+    <body>
+        <div class="review-container">
+            <h1>Leave a Review for "{{ post['Description'] }}"</h1>
+            
+            <div class="review-details">
+                <img src="{{ url_for('static', filename='uploads/' + post['file_name']) }}" alt="Image">
+                <p><strong>Author:</strong> {{ post['Author'] }}</p>
+                <p><strong>Average Rating:</strong> {{ post['Average_rating'] }}</p>
+            </div>
+            
+            <form method="POST">
+                <label for="rating">Your Rating (1-5):</label>
+                <input type="number" name="rating" min="1" max="5" required>
+                <button type="submit">Submit Review</button>
+            </form>
+        </div>
+    </body>
 </html>

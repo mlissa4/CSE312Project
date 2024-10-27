@@ -9,6 +9,7 @@ import os
 import secrets
 import hashlib
 import uuid
+import html
 from mongoengine.fields import (
     BinaryField,
     BooleanField,
@@ -120,9 +121,8 @@ def register():
 
 @app.route('/upload', methods=['POST'])
 def upload_image():
-    # Get the uploaded image file
     image = request.files['image']
-    description = request.form['description']
+    description = html.escape(request.form['description'])
 
     if not image.filename.endswith(('.png', '.jpg', '.jpeg', '.gif')):
         flash('Error: incorect image format')
@@ -134,9 +134,6 @@ def upload_image():
     image_filename = f"image_{uuid.uuid4()}"
     image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
     author = "Guest"
-
-    # Print the description
-    print(f"Description: {description}")
     data = {
         "file_name": image_filename,
         "Description": description,
@@ -159,7 +156,6 @@ def upload_image():
 
 
 
-#route to post
 @app.route('/post_redirect', methods=["GET"])
 def post_redirect():
     #if auth_token valid, redirect to /post_screen
@@ -173,6 +169,7 @@ def post_redirect():
             return redirect("/post_screen",code=302)
 
     return Response("Unauthorized", status=401)
+ 
 
 #need to build post_screen.html
 @app.route('/post_screen')

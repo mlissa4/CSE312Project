@@ -3,140 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flask App</title>
-    <style>
-        /* General Styles */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            color: #333;
-        }
-        
-        /* Navbar Styles */
-        .nav-bar {
-            background-color: #f3f3f3;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            padding: 10px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .nav-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: auto;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-        }
-
-        .logo img {
-            width: 70px;
-            margin-right: 10px;
-            border-radius: 8px;
-        }
-
-        .logo h1 {
-            font-size: 24px;
-            color: #333;
-            margin: 0;
-        }
-
-        /* Nav Buttons */
-        .nav-buttons button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin-left: 10px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-            outline: none;
-        }
-
-        .nav-buttons button:hover {
-            background-color: #45a049;
-        }
-
-        /* Gallery Styles */
-        .gallery {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .image-box {
-            width: 220px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            background-color: #f9f9f9;
-        }
-
-        .image-box img {
-            width: 100%;
-            border-radius: 8px;
-        }
-
-        .description {
-            font-size: 14px;
-            color: #666;
-            margin-top: 8px;
-        }
-
-        /* Star Rating Styles (Static) */
-        .star-rating {
-            font-size: 18px;
-            color: #FFD700; /* Gold color for stars */
-            margin-top: 5px;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .nav-container {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .logo img {
-                width: 60px;
-            }
-
-            .logo h1 {
-                font-size: 20px;
-            }
-
-            .nav-buttons button {
-                width: 100%;
-                margin: 5px 0;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
 <body>
-    <!-- Navbar -->
     <div class="nav-bar">
         <div class="nav-container">
             <div class="logo">
-                <button>
                     <img src="{{ url_for('static', filename='images/download.jpg') }}" alt="Kitty">
-                </button>
                 <h1>Dress Up Kitty</h1>
             </div>
             <div class="nav-buttons">
-                <button onclick="window.location.href='/login_page'">Register</button>
                 <button onclick="window.location.href='/login_page'">Login</button>
                 <button id="logout" onclick="logoutFeature()">Logout</button>
                 <button onclick="window.location.href='/post_redirect'">Posting</button>
@@ -144,28 +20,24 @@
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div style="padding: 20px; text-align: center;">
+    <div class="main">
         <h1>Welcome to Dress Up Kitty!</h1>
     </div>
 
-        <!-- Image Gallery -->
-        <div class="gallery">
-            {% for post in posts %}
-            <div class="image-box">
-                <!-- Display the image -->
-                <img src="{{ url_for('static', filename='uploads/' + post['file_name']) }}" alt="Image" width="200">
-                
-                <!-- Display additional details -->
-                <div class="description">{{ post['Description'] }}</div>
-                <div class="author">Author: {{ post['Author'] }}</div>
-                <div class="average-rating">Average Rating: {{ post['Average_rating'] }}</div>
-                <div class="star-rating">★ ★ ★ ★ ★</div>
-                <button onclick="window.location.href='/review/{{ post['file_name'] }}'">leave a review</button>
-            </div>
-        
-            {% endfor %}
+    <div class="gallery">
+        {% for post in posts %}
+        <div class="image-box">
+            <img src="{{ url_for('static', filename='uploads/' + post['file_name']) }}" alt="Image">
+            
+            <div class="description">{{ post['Description'] }}</div>
+            <div class="author">Author: {{ post['Author'] }}</div>
+            <div class="average-rating">Average Rating: {{ post['Average_rating'] }}</div>
+            <div class="star-rating">★ ★ ★ ★ ★</div>
+            
+            <button onclick="window.location.href='/review/{{ post['file_name'] }}'">Leave a Review</button>
         </div>
+        {% endfor %}
+    </div>
 
     <script src="/static/js/login.js"></script>
 </body>
