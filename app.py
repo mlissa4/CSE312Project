@@ -21,7 +21,7 @@ from mongoengine.fields import (
 
 mongo_clinet = MongoClient('mongo')
 db = mongo_clinet["user_auth"]
-auth= db["auth"]
+auth= db["auth"] #to access this database is the same way you do for the homework 
 
 app = Flask(__name__)
 
@@ -30,22 +30,24 @@ app.config['MONGO_URI'] = 'mongodb://localhost:27017/user_auth' #go into user_au
 app.config["SECRET_KEY"] = os.getenv("secret_key") #scecret key 
 app.config["SECURITY_PASSWORD_SALT"] = os.getenv("salt") #Salt here is a seond layer of protect along with the first layer of salt 
 
-# UPLOAD_FOLDER = 'static/uploads'
-# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+UPLOAD_FOLDER = 'static/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 mongo = PyMongo(app)
-
-class Role(Document, RoleMixin):
+#Don't worry about this part, is from a library documentation
+#read more about it on flasksecurity website https://flask-security-too.readthedocs.io/en/stable/
+class Role(Document, RoleMixin): 
     name = StringField(max_length=80, unique=True)
     description = StringField()
 class User(Document, UserMixin):
-    email = StringField(max_length=255,required=True,unique=True)
-    password=StringField(required=True)
-    active=BooleanField(default=True)
-    fs_uniquifier = StringField(max_length=64, unique=True)
-    roles = ListField(ReferenceField(Role), default=[])
+    email = StringField(max_length=255,required=True,unique=True) #username
+    password=StringField(required=True) #password
+    active=BooleanField(default=True) #active
+    fs_uniquifier = StringField(max_length=64, unique=True) #another check to see if the user is unique
+    roles = ListField(ReferenceField(Role), default=[]) #roles user admin, etc(will not be used yet)
 
 user_datastore= MongoEngineUserDatastore(mongo.db,User,Role)
+
 @app.route('/login', methods=["POST"]) #THIS LOGIN NEEDS TO BE HERE SO IT CAN OVER WRITE THE DEFAULT LOGIN PAGE GIVEN BY FLASK SECURITY
 def login():
    
@@ -63,10 +65,23 @@ def login():
     response = Response(status=302,headers={"Location":"/"})
     response.set_cookie("auth_token",auth_token,httponly=True, max_age=360000)
     return response
-
-Security = Security(app,user_datastore)
+#logout
+@app.route('/logout', methods=["POST"]) #this also must be before startup of security
+def logout():
+    
+    cookie_auth = request.cookies.get("auth_token") #get auth_token
+    if(cookie_auth != None):
+        hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest() #hash to compare in database
+    finding = auth.find_one({"auth_token":hash_cookie_auth})
+    if(finding != None): #test to see if the auth_token is legit
+        auth.delete_one({"auth_token":hash_cookie_auth}) #delete the auth_token by setting expires to 0
+    response = Response(status=302,headers={"Location":"/"})
+    response.set_cookie("auth_token","",httponly=True, expires=0) 
+    return response
+    
+Security = Security(app,user_datastore) #start up flask security
 @app.after_request
-def headerSecurity(response):
+def headerSecurity(response): # make sure every response has nosniff (global)
     response.headers["X-Content-Type-Options"] = "nosniff"
     return response
 
@@ -78,8 +93,8 @@ def home():
     # Filter only image files (e.g., .png, .jpg, .jpeg, .gif)
     image_files = [f for f in files_in_upload_folder if f.endswith(('.png', '.jpg', '.jpeg', '.gif'))]
 
-    # Pass the image filenames to the template
-    return render_template('index.html', images=image_files) 
+    #Pass the image filenames to the template
+    return render_template('index.html',images=image_files)
 @app.route('/login_page')
 def login_page():
     return render_template('login.html'), 200
@@ -88,19 +103,20 @@ def login_page():
 # TRY TO USE SOME LIBARIES!!!
 # Redirect User to home screen on sucessfull login
 
-print('something', flush=True)
-@app.route('/register', methods=["POST"])
+#register
+@app.route('/register', methods=["POST"]) 
 def register():
 
-    username = request.form["username"]      # For form data (if the request is from a form submission)
+    username = request.form["username"]# For form data (if the request is from a form submission)
     password = request.form["password"] 
     if not(auth_password(password)):
         return jsonify({"error": "password invalid"}), 404
     password = hash_password(password) #generates hashpassword that is salted by default (flask_security doc)
-    user_datastore.create_user(email=username, password=password)
+    user_datastore.create_user(email=username, password=password) #create a user (syntax will be used once to make flask secuurity work)
     user_datastore.commit()
-
     return redirect("/login_page",code=302)
+
+
 
 
 @app.route('/upload', methods=['POST'])
