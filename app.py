@@ -202,12 +202,12 @@ def review_page(file):
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         User = auth.find_one({"auth_token": hash_cookie_auth})
     if not User:
-        return{'Error: Not Logged in'}
+        return Response("Unauthorized", status=401)
         return redirect("/", code=302)
     post = posts_db.find_one({"file_name":file})
     Reviwers = post["Reviwers"]
     if User["username"] in Reviwers:
-        return{'Error: Already Reviewed Post'}
+        return Response("Unauthorized", status=401)
     if request.method == "GET":
         return render_template('review_page.html',post=post), 200
     if request.method == "POST":
