@@ -2,8 +2,10 @@ from flask import Flask, render_template, jsonify, request, redirect, Response, 
 from flask_security import UserMixin, RoleMixin, Security, MongoEngineUserDatastore
 from flask_pymongo import PyMongo
 from pymongo import MongoClient
+from mongoengine import NotUniqueError
 from mongoengine import connect, Document
 from utils.auth import *
+from html import escape
 from flask_security.utils import hash_password, verify_password
 import os
 import secrets
@@ -31,8 +33,9 @@ app = Flask(__name__)
 connect('user_auth', host='mongo', port=27017) #path is user_auth
 app.config['MONGO_URI'] = 'mongodb://localhost:27017/user_auth' #go into user_auth collection
 app.config["SECRET_KEY"] = os.getenv("secret_key") #scecret key 
-app.config["SECURITY_PASSWORD_SALT"] = os.getenv("salt") #Salt here is a seond layer of protect along with the first layer of salt 
-
+app.config["SECURITY_PASSWORD_SALT"] = os.getenv("salt") #  seond layer of salt along with the first layer of salt using brcypt
+app.config['SECURITY_REGISTERABLE'] = False
+app.config['SESSION_COOKIE_HTTPONLY'] = False
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -40,10 +43,10 @@ mongo = PyMongo(app)
 #Don't worry about this part, is from a library documentation
 #read more about it on flasksecurity website https://flask-security-too.readthedocs.io/en/stable/
 class Role(Document, RoleMixin): 
-    name = StringField(max_length=80, unique=True)
+    name = StringField(max_length=40, unique=True)
     description = StringField()
 class User(Document, UserMixin):
-    email = StringField(max_length=255,required=True,unique=True) #username
+    email = StringField(max_length=40,required=True,unique=True) #username
     password=StringField(required=True) #password
     active=BooleanField(default=True) #active
     fs_uniquifier = StringField(max_length=64, unique=True) #another check to see if the user is unique
@@ -51,17 +54,20 @@ class User(Document, UserMixin):
 
 user_datastore= MongoEngineUserDatastore(mongo.db,User,Role)
 
-@app.route('/login', methods=["POST"]) #THIS LOGIN NEEDS TO BE HERE SO IT CAN OVER WRITE THE DEFAULT LOGIN PAGE GIVEN BY FLASK SECURITY
+@app.route('/login', methods=["GET","POST"]) #THIS LOGIN NEEDS TO BE HERE SO IT CAN OVER WRITE THE DEFAULT LOGIN PAGE GIVEN BY FLASK SECURITY
 def login():
    
     username = request.form.get("login_username")
+    # username = html.escape(username)
     password = request.form.get("login_password")
     user = user_datastore.find_user(email=username)
     if(username == "" or user == None):
-        return jsonify({"error": "Invalid Username"}),404
+        flash("incorrect password or username", "login")
+        return redirect("/login_page",code=302)
     # if not bcrpyt.check_password_hash(user.password, password):
     if not verify_password(password, user.password):
-        return jsonify({"error": "Invalid username or password"}), 404
+        flash("incorrect password or username", "login")
+        return redirect("/login_page",code=302)
     auth_token = secrets.token_hex(32)
     hash_auth_token = hashlib.sha256(auth_token.encode()).hexdigest()
     auth.insert_one({"username": username, "auth_token": hash_auth_token})
@@ -69,17 +75,21 @@ def login():
     response.set_cookie("auth_token",auth_token,httponly=True, max_age=360000)
     return response
 #logout
-@app.route('/logout', methods=["POST"]) #this also must be before startup of security
+@app.route('/logout', methods=["GET","POST"]) #this also must be before startup of security
 def logout():
     
     cookie_auth = request.cookies.get("auth_token") #get auth_token
+    hash_cookie_auth =""
     if(cookie_auth != None):
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest() #hash to compare in database
+    else:
+        return Response(status=302,headers={"Location": "/"})
     finding = auth.find_one({"auth_token":hash_cookie_auth})
     if(finding != None): #test to see if the auth_token is legit
         auth.delete_one({"auth_token":hash_cookie_auth}) #delete the auth_token by setting expires to 0
     response = Response(status=302,headers={"Location":"/"})
     response.set_cookie("auth_token","",httponly=True, expires=0) 
+    
     return response
     
 Security = Security(app,user_datastore) #start up flask security
@@ -90,9 +100,16 @@ def headerSecurity(response): # make sure every response has nosniff (global)
 
 @app.route('/')
 def home():
+    user_name = "Please Login"
+    cookie_auth = request.cookies.get("auth_token") #get auth_token
+    hash_cookie_auth = ""
+    if(cookie_auth != None):
+        hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest() #hash to compare in database
+    finding = auth.find_one({"auth_token":hash_cookie_auth})
+    if(finding != None): #test to see if the auth_token is legit
+        user_name = finding["username"]
     posts = list(posts_db.find())
-    
-    return render_template('index.html',posts=posts)
+    return render_template('index.html',posts=posts, username= user_name+"!")
 
 
 @app.route('/login_page')
@@ -108,14 +125,23 @@ def login_page():
 def register():
 
     username = request.form["username"]# For form data (if the request is from a form submission)
+    # username = html.escape(username)
     password = request.form["password"] 
+    confirm_password= request.form["confirm_password"]
     if not(auth_password(password)):
-        return jsonify({"error": "password invalid"}), 404
+        flash("password is not secure, please try again", "register")
+        return redirect("/login_page",code=302)
+    if (confirm_password != password):
+        flash("password does not match, please try again", "register")
+        return redirect("/login_page",code=302)
     password = hash_password(password) #generates hashpassword that is salted by default (flask_security doc)
-    user_datastore.create_user(email=username, password=password) #create a user (syntax will be used once to make flask secuurity work)
-    user_datastore.commit()
+    try:
+        user_datastore.create_user(email=username, password=password) #create a user (syntax will be used once to make flask secuurity work)
+        user_datastore.commit()
+    except NotUniqueError:
+        flash("username is already taken , please try again", "register")
+        return redirect("/login_page",code=302) 
     return redirect("/login_page",code=302)
-
 
 
 
@@ -133,7 +159,7 @@ def upload_image():
     
     image = request.files['image']
     description = html.escape(request.form['description'])
-
+    
     if not image.filename.endswith(('.png', '.jpg', '.jpeg', '.gif')):
         flash('Error: incorect image format')
         return redirect("/", code=302)
@@ -197,17 +223,18 @@ def post_screen():
 
 @app.route('/review/<file>', methods = {"GET","POST"})
 def review_page(file):
+    User = None
     cookie_auth = request.cookies.get("auth_token")
     if cookie_auth:
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         User = auth.find_one({"auth_token": hash_cookie_auth})
-    if not User:
+    if User == None:
         return Response("Unauthorized", status=401)
         return redirect("/", code=302)
     post = posts_db.find_one({"file_name":file})
     Reviwers = post["Reviwers"]
-    if User["username"] in Reviwers:
-        return Response("Unauthorized", status=401)
+    if User["username"] not in Reviwers:
+        return Response("Please Login", status=401)
     if request.method == "GET":
         return render_template('review_page.html',post=post), 200
     if request.method == "POST":
