@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, redirect, Response, flash
+from flask import Flask, render_template, jsonify, request, redirect, Response, flash,send_file, abort
 from flask_security import UserMixin, RoleMixin, Security, MongoEngineUserDatastore
 from flask_pymongo import PyMongo
 from pymongo import MongoClient
@@ -116,8 +116,41 @@ def register():
     user_datastore.commit()
     return redirect("/login_page",code=302)
 
+@app.route('/static/css/<filename>')
+def serve_css(filename):
+    return send_file(f'static/css/{filename}', mimetype=f'text/css')
 
+@app.route('/static/js/<filename>')
+def serve_js(filename):
+    return send_file(f'static/js/{filename}', mimetype='text/javascript')
 
+@app.route('/static/uploads/<filename>')
+def serve_image(filename):
+    file_extension = filename.split(".")[1]
+    mime_types = {
+        "jpg": "jpeg",
+        "jpeg": "jpeg",
+        "png": "png",
+        "gif": "gif",
+    }
+    mimetype = mime_types[file_extension]
+    if mimetype == None:
+        abort(404)
+    return send_file(f'static/uploads/{filename}', mimetype=f'image/{mimetype}')
+
+@app.route('/static/images/<filename>')
+def serve_image2(filename):
+    file_extension = filename.split(".")[1]
+    mime_types = {
+        "jpg": "jpeg",
+        "jpeg": "jpeg",
+        "png": "png",
+        "gif": "gif",
+    }
+    mimetype = mime_types[file_extension]
+    if mimetype == None:
+        abort(404)
+    return send_file(f'static/images/{filename}', mimetype=f'image/{mimetype}')
 
 @app.route('/upload', methods=['POST'])
 def upload_image():
@@ -132,6 +165,7 @@ def upload_image():
     
     
     image = request.files['image']
+    filetype = image.filename.split(".")[1]
     description = html.escape(request.form['description'])
 
     if not image.filename.endswith(('.png', '.jpg', '.jpeg', '.gif')):
@@ -141,7 +175,7 @@ def upload_image():
     if not image and not description:
         flash('Error: Image and description are required!')
         return redirect("/", code=302)
-    image_filename = f"image_{uuid.uuid4()}"
+    image_filename = f"image_{uuid.uuid4()}.{filetype}"
     image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
     cookie_auth = request.cookies.get("auth_token")
     if cookie_auth:
@@ -198,16 +232,16 @@ def post_screen():
 @app.route('/review/<file>', methods = {"GET","POST"})
 def review_page(file):
     cookie_auth = request.cookies.get("auth_token")
+    User = None
     if cookie_auth:
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         User = auth.find_one({"auth_token": hash_cookie_auth})
     if not User:
-        return Response("Unauthorized", status=401)
-        return redirect("/", code=302)
+        return Response("Not Logged in", status=401)
     post = posts_db.find_one({"file_name":file})
     Reviwers = post["Reviwers"]
     if User["username"] in Reviwers:
-        return Response("Unauthorized", status=401)
+        return Response("Already Reviewed", status=401)
     if request.method == "GET":
         return render_template('review_page.html',post=post), 200
     if request.method == "POST":
