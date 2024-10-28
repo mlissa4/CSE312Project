@@ -35,7 +35,7 @@ app.config['MONGO_URI'] = 'mongodb://localhost:27017/user_auth' #go into user_au
 app.config["SECRET_KEY"] = os.getenv("secret_key") #scecret key is just a random hex can be changed to anything
 app.config["SECURITY_PASSWORD_SALT"] = os.getenv("salt") #  seond layer of salt along with the first layer of salt using brcypt is just a random hex can be changed to anything
 app.config['SECURITY_REGISTERABLE'] = False
-app.config['SESSION_COOKIE_HTTPONLY'] = False
+app.config['SESSION_PROTECTION'] = None
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
