@@ -6,6 +6,10 @@ function logoutFeature() {
         },
         body: JSON.stringify({})
 
+    }) .then(response => {
+        if(response.ok){
+            window.location.href="/";
+        }
     })
 
 }
