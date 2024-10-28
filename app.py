@@ -165,7 +165,7 @@ def kitty_image(filename):
     return response
 @app.route('/static/uploads/<filename>')
 def serve_image(filename):
-    file_extension = filename.split(".")[1].lower() if '.' in filename else None
+    file_extension = filename.split(".")[1].lower()
 
     mime_types = {
         "jpg": "jpeg",
@@ -185,7 +185,7 @@ def serve_image(filename):
 
 @app.route('/static/images/<filename>')
 def serve_image2(filename):
-    file_extension = filename.rsplit(".")[1].lower() if '.' in filename else None
+    file_extension = filename.rsplit(".")[1].lower()
 
     mime_types = {
         "jpg": "jpeg",
