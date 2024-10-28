@@ -35,7 +35,7 @@ app.config['MONGO_URI'] = 'mongodb://localhost:27017/user_auth' #go into user_au
 app.config["SECRET_KEY"] = os.getenv("secret_key") #scecret key is just a random hex can be changed to anything
 app.config["SECURITY_PASSWORD_SALT"] = os.getenv("salt") #  seond layer of salt along with the first layer of salt using brcypt is just a random hex can be changed to anything
 app.config['SECURITY_REGISTERABLE'] = False
-app.config['SESSION_COOKIE_HTTPONLY'] = False
+app.config['SESSION_PROTECTION'] = None
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -148,6 +148,7 @@ def register():
 def serve_css(filename):
     response = make_response(send_file(f'static/css/{filename}'))
     response.headers['Content-Type'] = 'text/css'
+    response.headers['Cache-Control'] = 'no-store, no-cache'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 
@@ -155,12 +156,14 @@ def serve_css(filename):
 def serve_js(filename):
     response = make_response(send_file(f'static/js/{filename}'))
     response.headers['Content-Type'] = 'text/javascript'
+    response.headers['Cache-Control'] = 'no-store, no-cache'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 @app.route('/static/images/<filename>')
 def kitty_image(filename):
     response = make_response(send_file('static/images/download.jpg'))
     response.headers['Content-Type'] = 'image/jpg'
+    response.headers['Cache-Control'] = 'no-store, no-cache'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 @app.route('/static/uploads/<filename>')
@@ -180,6 +183,7 @@ def serve_image(filename):
 
     response = make_response(send_file(f'static/uploads/{filename}'))
     response.headers['Content-Type'] = f'image/{mimetype}'
+    response.headers['Cache-Control'] = 'no-store, no-cache'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 
@@ -205,12 +209,12 @@ def serve_image2(filename):
 
 @app.route('/upload', methods=['POST'])
 def uploadimage():
-
+    User = None
     cookie_auth = request.cookies.get("auth_token")
     if cookie_auth:
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         User = auth.find_one({"auth_token": hash_cookie_auth})
-    if not User:
+    if User == None:
         flash('Error: Not Logged In')
         return redirect("/", code=302)
 
