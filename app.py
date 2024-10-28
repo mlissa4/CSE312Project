@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, redirect, Response, flash,send_file, abort
+from flask import Flask, render_template, jsonify, request, redirect, Response, flash,send_file, abort, make_response
 from flask_security import UserMixin, RoleMixin, Security, MongoEngineUserDatastore
 from flask_pymongo import PyMongo
 from pymongo import MongoClient
@@ -145,39 +145,57 @@ def register():
 
 @app.route('/static/css/<filename>')
 def serve_css(filename):
-    return send_file(f'static/css/{filename}', mimetype=f'text/css')
+    response = make_response(send_file(f'static/css/{filename}'))
+    response.headers['Content-Type'] = 'text/css'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
 
 @app.route('/static/js/<filename>')
 def serve_js(filename):
-    return send_file(f'static/js/{filename}', mimetype='text/javascript')
+    response = make_response(send_file(f'static/js/{filename}'))
+    response.headers['Content-Type'] = 'text/javascript'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
 
 @app.route('/static/uploads/<filename>')
 def serve_image(filename):
-    file_extension = filename.split(".")[1]
+    file_extension = filename.rsplit(".", 1)[-1].lower() if '.' in filename else None
+
     mime_types = {
         "jpg": "jpeg",
         "jpeg": "jpeg",
         "png": "png",
         "gif": "gif",
     }
-    mimetype = mime_types[file_extension]
-    if mimetype == None:
+
+    mimetype = mime_types.get(file_extension)
+    if mimetype is None:
         abort(404)
-    return send_file(f'static/uploads/{filename}', mimetype=f'image/{mimetype}')
+
+    response = make_response(send_file(f'static/uploads/{filename}'))
+    response.headers['Content-Type'] = f'image/{mimetype}'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
 
 @app.route('/static/images/<filename>')
 def serve_image2(filename):
-    file_extension = filename.split(".")[1]
+    file_extension = filename.rsplit(".", 1)[-1].lower() if '.' in filename else None
+
     mime_types = {
         "jpg": "jpeg",
         "jpeg": "jpeg",
         "png": "png",
         "gif": "gif",
     }
-    mimetype = mime_types[file_extension]
-    if mimetype == None:
+
+    mimetype = mime_types.get(file_extension)
+    if mimetype is None:
         abort(404)
-    return send_file(f'static/images/{filename}', mimetype=f'image/{mimetype}')
+
+    response = make_response(send_file(f'static/images/{filename}'))
+    response.headers['Content-Type'] = f'image/{mimetype}'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
 
 @app.route('/upload', methods=['POST'])
 def uploadimage():
