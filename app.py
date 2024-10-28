@@ -159,7 +159,7 @@ def serve_js(filename):
 
 @app.route('/static/uploads/<filename>')
 def serve_image(filename):
-    file_extension = filename.rsplit(".", 1)[-1].lower() if '.' in filename else None
+    file_extension = filename.split(".")[1].lower() if '.' in filename else None
 
     mime_types = {
         "jpg": "jpeg",
@@ -179,7 +179,7 @@ def serve_image(filename):
 
 @app.route('/static/images/<filename>')
 def serve_image2(filename):
-    file_extension = filename.rsplit(".", 1)[-1].lower() if '.' in filename else None
+    file_extension = filename.rsplit(".")[1].lower() if '.' in filename else None
 
     mime_types = {
         "jpg": "jpeg",
@@ -212,7 +212,7 @@ def uploadimage():
     image = request.files['image']
     filetype = image.filename.split(".")[1]
     filetype = image.filename.split(".")[1]
-    description = html.escape(request.form['description'])
+    description = request.form['description']
 
     if not image.filename.endswith(('.png', '.jpg', '.jpeg', '.gif')):
         flash('Error: incorect image format')
