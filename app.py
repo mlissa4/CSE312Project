@@ -32,8 +32,8 @@ app = Flask(__name__)
 
 connect('user_auth', host='mongo', port=27017) #path is user_auth
 app.config['MONGO_URI'] = 'mongodb://localhost:27017/user_auth' #go into user_auth collection
-app.config["SECRET_KEY"] = os.getenv("secret_key") #scecret key 
-app.config["SECURITY_PASSWORD_SALT"] = os.getenv("salt") #  seond layer of salt along with the first layer of salt using brcypt
+app.config["SECRET_KEY"] = os.getenv("secret_key") #scecret key is just a random hex can be changed to anything
+app.config["SECURITY_PASSWORD_SALT"] = os.getenv("salt") #  seond layer of salt along with the first layer of salt using brcypt is just a random hex can be changed to anything
 app.config['SECURITY_REGISTERABLE'] = False
 app.config['SESSION_COOKIE_HTTPONLY'] = False
 UPLOAD_FOLDER = 'static/uploads'
@@ -140,7 +140,8 @@ def register():
         user_datastore.commit()
     except NotUniqueError:
         flash("username is already taken , please try again", "register")
-        return redirect("/login_page",code=302) 
+        return redirect("/login_page",code=302)
+    flash("Successful! Please login", "register")
     return redirect("/login_page",code=302)
 
 @app.route('/static/css/<filename>')
@@ -156,7 +157,12 @@ def serve_js(filename):
     response.headers['Content-Type'] = 'text/javascript'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
-
+@app.route('/static/images/<filename>')
+def kitty_image(filename):
+    response = make_response(send_file('static/images/download.jpg'))
+    response.headers['Content-Type'] = 'image/jpg'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
 @app.route('/static/uploads/<filename>')
 def serve_image(filename):
     file_extension = filename.split(".")[1].lower() if '.' in filename else None
@@ -259,15 +265,15 @@ def uploadimage():
 def post_redirect():
     #if auth_token valid, redirect to /post_screen
         #hash auth token and check if hashed token exists in db
-    #if not, error 401 unauthorized
+    #if not, display please login
     cookie_auth = request.cookies.get("auth_token")
     if cookie_auth:
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         finding = auth.find_one({"auth_token": hash_cookie_auth})
         if finding:
             return redirect("/post_screen",code=302)
-
-    return Response("Unauthorized", status=401)
+    flash("To Post Please Login", "post_permission")
+    return redirect("/", code=302)
  
 
 #need to build post_screen.html
@@ -284,11 +290,13 @@ def review_page(file):
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         User = auth.find_one({"auth_token": hash_cookie_auth})
     if not User:
-        return Response("Not Logged in", status=401)
+        flash("To leave a review, Please Login", "post_permission")
+        return redirect("/", code=302)
     post = posts_db.find_one({"file_name":file})
     Reviwers = post["Reviwers"]
     if User["username"] in Reviwers:
-        return Response("Already Reviewed", status=401)
+        flash("Already Reviewed or Is Your Own Post", "post_permission")
+        return redirect("/", code=302)
     if request.method == "GET":
         return render_template('review_page.html',post=post), 200
     if request.method == "POST":
