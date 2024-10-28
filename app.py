@@ -146,7 +146,7 @@ def register():
 
 
 @app.route('/upload', methods=['POST'])
-def upload_image():
+def uploadimage():
 
     cookie_auth = request.cookies.get("auth_token")
     if cookie_auth:
@@ -155,11 +155,12 @@ def upload_image():
     if not User:
         flash('Error: Not Logged In')
         return redirect("/", code=302)
-    
-    
+
+
     image = request.files['image']
+    filetype = image.filename.split(".")[1]
     description = html.escape(request.form['description'])
-    
+
     if not image.filename.endswith(('.png', '.jpg', '.jpeg', '.gif')):
         flash('Error: incorect image format')
         return redirect("/", code=302)
@@ -167,7 +168,7 @@ def upload_image():
     if not image and not description:
         flash('Error: Image and description are required!')
         return redirect("/", code=302)
-    image_filename = f"image_{uuid.uuid4()}"
+    image_filename = f"image{uuid.uuid4()}.{filetype}"
     image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
     cookie_auth = request.cookies.get("auth_token")
     if cookie_auth:
@@ -228,13 +229,13 @@ def review_page(file):
     if cookie_auth:
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         User = auth.find_one({"auth_token": hash_cookie_auth})
-    if User == None:
+    if not User:
         return Response("Unauthorized", status=401)
         return redirect("/", code=302)
     post = posts_db.find_one({"file_name":file})
     Reviwers = post["Reviwers"]
-    if User["username"] not in Reviwers:
-        return Response("Please Login", status=401)
+    if User["username"] in Reviwers:
+        return Response("Unauthorized", status=401)
     if request.method == "GET":
         return render_template('review_page.html',post=post), 200
     if request.method == "POST":
@@ -249,7 +250,6 @@ def review_page(file):
         print(f"Reviwers AFTER {Reviwers}")
         posts_db.update_one({"file_name":file},{"$set": {"Total_rating": total_rating, "Average_rating": average_rating, "reviews": review_count, "Reviwers":Reviwers }})
         return redirect("/",code=302)
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
