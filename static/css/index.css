@@ -77,7 +77,6 @@ body {
 }
 
 .image_box {
-    width: 220px;
     padding: 15px;
     border: 1px solid #ddd;
     border-radius: 10px;
@@ -88,7 +87,7 @@ body {
 
 
 .image_box img {
-    width: 100%;
+
     border-radius: 8px;
     margin-bottom: 10px;
 }

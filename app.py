@@ -6,12 +6,14 @@ from mongoengine import NotUniqueError
 from mongoengine import connect, Document
 from utils.auth import *
 from html import escape
+from flask_socketio import SocketIO
 from flask_security.utils import hash_password, verify_password
 import os
 import secrets
 import hashlib
 import uuid
 import html
+from PIL import Image, ImageSequence
 from mongoengine.fields import (
     BinaryField,
     BooleanField,
@@ -27,6 +29,7 @@ mongo_clinet = MongoClient('mongo')
 db = mongo_clinet["user_auth"]
 auth= db["auth"] #to access this database is the same way you do for the homework 
 posts_db = db["posts"]
+name_counter = db["counter"]
 
 app = Flask(__name__)
 
@@ -116,7 +119,6 @@ def home():
 def login_page():
     return render_template('login.html'), 200
 
-# RICO AND ERIC PLEASE USE SEPPERATE FILES FOR LOGGING IN AND REGISTERING
 # TRY TO USE SOME LIBARIES!!!
 # Redirect User to home screen on sucessfull login
 
@@ -168,7 +170,8 @@ def kitty_image(filename):
     return response
 @app.route('/static/uploads/<filename>')
 def serve_image(filename):
-    file_extension = filename.split(".")[1].lower()
+    print("file_extension", filename)
+    file_extension = filename.split(".")[1]
 
     mime_types = {
         "jpg": "jpeg",
@@ -187,6 +190,7 @@ def serve_image(filename):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 
+#uploading images/video to the site 
 @app.route('/static/images/<filename>')
 def serve_image2(filename):
     file_extension = filename.rsplit(".")[1].lower()
@@ -207,6 +211,33 @@ def serve_image2(filename):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 
+#create custom name for each uploaded image/video
+def custom_name():
+    retur == None
+    retur = name_counter.find_one({"counter": "counter"})
+    if retur == None : 
+        retur.insert_one({"counter": "counter", "number":"1"})
+        name = "image_1"
+    else:
+        number = int(retur["number"])
+        number += 1
+        retur.replace_one({"counter":"counter", "number": str(number)})
+        return "image_" + str(number)
+
+#check the signature of the image/video
+def sign_checker(img_sign):
+    sign_dict = {
+        "jpeg": ["FFD8FF", "FFD8FFE000104A46", "49460001", "FFD8FFEE", "FFD8FFE1????4578", "69660000", "FFD8FFE0"],
+        "png" : ["89504E470D0A1A0A"],
+        "gif" : ["474946383761", "474946383961"]
+
+    }
+    for sign in sign_dict:
+        sign_list = sign_dict[sign]
+        for signature in sign_list:
+            if(img_sign.startswith(signature)):
+                return sign
+    return ""
 @app.route('/upload', methods=['POST'])
 def uploadimage():
     User = None
@@ -220,19 +251,66 @@ def uploadimage():
 
 
     image = request.files['image']
+    print("image info", image)
+    filetype = ""
     filetype = image.filename.split(".")[1]
     filetype = image.filename.split(".")[1]
-    description = request.form['description']
+    img_sign = image.stream.read(14)
+    img_sign = img_sign.hex().upper()
+    image.stream.seek(0)
+    filetype = sign_checker(img_sign)
 
-    if not image.filename.endswith(('.png', '.jpg', '.jpeg', '.gif')):
-        flash('Error: incorect image format')
-        return redirect("/", code=302)
+    description = request.form['description']
+    print("filetype: ", filetype)
+    if filetype == "":
+        img_sign = img_sign[8:]
+        if (img_sign.startswith("6674797069736F6D") or (img_sign.startswith("66747970"))):
+            filetype = "mp4"
+        else:
+            flash('Error: incorect image format')
+            return redirect("/", code=302)
 
     if not image and not description:
         flash('Error: Image and description are required!')
         return redirect("/", code=302)
     image_filename = f"image_{uuid.uuid4()}.{filetype}"
-    image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+    
+    with Image.open(image.stream) as img:
+        width, height = img.size
+        ratio = 0
+        path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+        if (filetype != "gif"): #resize non gifs
+            if(height < width):
+                ratio = width/height
+                width = 300
+                height = round(300/ratio)
+                resize = img.resize((width, height))
+                resize.save(path)
+            else:
+                ratio = height/width
+                height = 300
+                width = round(300/ratio)
+                resize = img.resize((width, height))
+                resize.save(path)
+        else: #resizing gifs
+            frames = ImageSequence.Iterator(img)
+            new_frames = []
+            if(height < width):
+                ratio = width/height
+                height = round(300/ratio)
+                width = 300
+            else:
+                ratio = height/width
+                height = 300
+                width = round(300/ratio)
+            for frame in frames:
+                resize = frame.resize((width, height))
+                new_frames.append(resize)
+            new_frames[0].save(path, save_all=True, append_images=new_frames[1:])
+                
+
+
+
     cookie_auth = request.cookies.get("auth_token")
     if cookie_auth:
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
@@ -263,7 +341,25 @@ def uploadimage():
     return redirect("/", code=302)
     
 
-
+#user_list page
+@app.route('/user_list', methods=["GET"]) 
+def user_list():
+    cookie_auth=request.cookies.get("auth_token")
+    if cookie_auth: #check for if there is auth_cookies
+        hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
+        finding = auth.find_one({"auth_token": hash_cookie_auth})
+        if finding: #if auth_cookie is valid 
+            users = User.objects.all()
+            all_users = [user.email for user in users] #all registered usernames
+            for user in all_users:
+                flash(f"User: {user}")
+            print("all_users: ", all_users)
+            return render_template("user_list.html")
+        else: #if auth cookie is not valid 
+          return redirect("/", code=302)  
+    else:
+        return redirect("/", code=302)
+        
 
 @app.route('/post_redirect', methods=["GET"])
 def post_redirect():
