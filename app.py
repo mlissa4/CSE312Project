@@ -130,6 +130,9 @@ def register():
     # username = html.escape(username)
     password = request.form["password"] 
     confirm_password= request.form["confirm_password"]
+    if len(username) >=16:
+        flash("username too long, please try again", "register")
+        return redirect("/login_page",code=302)
     if not(auth_password(password)):
         flash("password is not secure, please try again", "register")
         return redirect("/login_page",code=302)
