@@ -372,6 +372,9 @@ def post_redirect():
         finding = auth.find_one({"auth_token": hash_cookie_auth})
         if finding:
             return redirect("/post_screen",code=302)
+        else:
+            flash("To Post Please Login", "post_permission")
+            return redirect("/", code=302)
     flash("To Post Please Login", "post_permission")
     return redirect("/", code=302)
  
@@ -379,7 +382,16 @@ def post_redirect():
 #need to build post_screen.html
 @app.route('/post_screen')
 def post_screen():
-    return render_template('post_screen.html'), 200
+    cookie_auth = request.cookies.get("auth_token")
+    if cookie_auth:
+        hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
+        finding = auth.find_one({"auth_token": hash_cookie_auth})
+        if finding:
+            return render_template('post_screen.html'), 200
+        else: 
+            return redirect("/", code=302)
+    else:
+        return redirect("/", code=302)
 
 @app.route('/review/<file>', methods = {"GET","POST"})
 def review_page(file):
