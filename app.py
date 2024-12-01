@@ -164,13 +164,20 @@ def serve_js(filename):
     response.headers['Cache-Control'] = 'no-store, no-cache'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
+
 @app.route('/static/images/<filename>')
 def kitty_image(filename):
-    response = make_response(send_file('static/images/download.jpg'))
-    response.headers['Content-Type'] = 'image/jpg'
+    file_path = os.path.join('static', 'images', filename)
+    # Check if the file exists
+    if not os.path.exists(file_path):
+        abort(404, description="File not found")
+    # Serve the file dynamically
+    response = make_response(send_file(file_path))
+    response.headers['Content-Type'] = 'image/jpeg'  # Adjust Content-Type if necessary
     response.headers['Cache-Control'] = 'no-store, no-cache'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
+
 @app.route('/static/uploads/<filename>')
 def serve_image(filename):
     print("file_extension", filename)
