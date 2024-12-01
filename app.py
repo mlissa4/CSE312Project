@@ -6,7 +6,7 @@ from mongoengine import NotUniqueError
 from mongoengine import connect, Document
 from utils.auth import *
 from html import escape
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit
 from flask_security.utils import hash_password, verify_password
 import os
 import secrets
@@ -28,11 +28,12 @@ from mongoengine.fields import (
 mongo_clinet = MongoClient('mongo')
 db = mongo_clinet["user_auth"]
 auth= db["auth"] #to access this database is the same way you do for the homework 
-posts_db = db["posts"]
-name_counter = db["counter"]
-
+posts_db = db["posts"] #storage of image name 
+name_counter = db["counter"] #might use but we keeping the image/gif uuid random
+dm_message = db["dm"] #dm storage
 app = Flask(__name__)
-
+socketio = SocketIO(app, threaded=True) #sockets with multi threading
+user_online = {} #storage of all the active members
 connect('user_auth', host='mongo', port=27017) #path is user_auth
 app.config['MONGO_URI'] = 'mongodb://localhost:27017/user_auth' #go into user_auth collection
 app.config["SECRET_KEY"] = os.getenv("secret_key") #scecret key is just a random hex can be changed to anything
@@ -348,6 +349,7 @@ def uploadimage():
 @app.route('/user_list', methods=["GET"]) 
 def user_list():
     cookie_auth=request.cookies.get("auth_token")
+    finding = None
     if cookie_auth: #check for if there is auth_cookies
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         finding = auth.find_one({"auth_token": hash_cookie_auth})
@@ -355,14 +357,96 @@ def user_list():
             users = User.objects.all()
             all_users = [user.email for user in users] #all registered usernames
             for user in all_users:
-                flash(f"User: {user}")
-            print("all_users: ", all_users)
+                if(user != finding["username"]):
+                    flash(f"{user}")
             return render_template("user_list.html")
-        else: #if auth cookie is not valid 
+        else: #if auth cookie is not valid
+          flash("Please login to use DM feature", "post_permission") 
           return redirect("/", code=302)  
     else:
+        flash("Please login to use DM feature", "post_permission") 
         return redirect("/", code=302)
+
+@app.route('/direct_message/<username>', methods=["GET", "POST"])
+def direct_message(username):
+    cookie_auth = request.cookies.get("auth_token")
+    finding = None
+    if cookie_auth:
+        hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
+        finding = auth.find_one({"auth_token": hash_cookie_auth})
+        if finding:
+            return render_template('direct_message.html', username=username)
+        else:
+            flash("Please login to send a DM", "post_permission")
+            return redirect("/", code=302)
+    else:
+        flash("Please login to send a DM", "post_permission")
+        return redirect("/", code=302)
+#establish empty 101 
+@socketio.on("connect")
+def activity_adder():
+    print("reached ")
+    cookie_auth=request.cookies.get("auth_token")
+    finding = None
+    username = ""
+    if cookie_auth:
+        hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
+        finding = auth.find_one({"auth_token": hash_cookie_auth})
         
+        if finding: #if auth_cookie is valid 
+            username = finding["username"]
+            if (username not in user_online):
+                user_online[username] = [request.sid]
+            else:
+                temp = user_online[username]
+                temp.append(request.sid)
+                user_online[username] = temp
+            print("user_online: ", user_online)
+        else:
+            return redirect("/", code=302)
+    else:
+        return redirect("/", code=302)
+
+
+@socketio.on('disconnect')
+def websocket_disconnect():
+    print("disconnect is triggered")
+    cookie_auth=request.cookies.get("auth_token")
+    finding = None
+    username = ""
+    if cookie_auth:
+        hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
+        finding = auth.find_one({"auth_token": hash_cookie_auth})
+        if finding: #if auth_cookie is valid 
+            username = finding["username"]
+            sids = user_online[username]
+            sids = sids.remove(request.sid)
+            
+        else: 
+            return redirect("/", code=302)
+    else: 
+        return redirect("/", code=302)
+
+@socketio.on("send_message")
+def handle_messages(message_data):
+    print("reached new_message")
+    cookie_auth = request.cookies.get("auth_token")
+    finding = None
+    sender_username = ""
+    if cookie_auth: 
+        hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
+        finding = auth.find_one({"auth_token": hash_cookie_auth})
+        if finding:
+            sender_username = finding["username"]
+            reciever = message_data.get("username")
+            print("activity in send_message: ", user_online)
+            reciever_lis = user_online[reciever]
+            sender_lis = user_online[sender_username]
+            for sender in sender_lis:
+                socketio.emit("message", {"username":sender_username, "message":message_data.get("message")}, room=sender)
+            for i in reciever_lis:
+                socketio.emit("message", {"username":sender_username, "message":message_data.get("message")}, room=i)
+            
 
 @app.route('/post_redirect', methods=["GET"])
 def post_redirect():

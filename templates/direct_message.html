@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Message</title>
+    <link rel="stylesheet" href="{{url_for('static', filename='css/direct_message.css') }}">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Direct Message: {{ username }}</h1>
+        <div id="messages">
+        </div>
+        <input id="message-input" type="text">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+<script>
+    var socket = io.connect('http://localhost:8080', {transports: ['websocket'] });
+    socket.on('message', function(message_data) {
+        var messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+        messageElement.textContent = `${message_data.username}: ${message_data.message}`;
+        document.getElementById('messages').appendChild(messageElement);
+        var messagesBox = document.getElementById('messages');
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    });
+    function sendMessage() {
+        var messageInput = document.getElementById('message-input');
+        var message = messageInput.value;
+        var username = "{{ username }}";
+        socket.emit('send_message', {
+            message: message,
+            username: username
+        });
+        messageInput.value = '';
+    }
+</script>
+</body>
+</html>

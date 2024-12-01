@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>User List</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/user_list.css') }}">
+    <link rel="stylesheet" href="{{url_for('static', filename='css/user_list.css') }}">
 </head>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+<script src="/static/js/websocket.js"></script> -->
+
 <body>
     <div class="container">
         <h1>Send DM</h1>
@@ -14,7 +17,10 @@
                     {% for message in messages %}
                         <li>
                             <span>{{ message }}</span>
-                            <button>Send DM</button>
+                            <button onclick="window.location.href='{{ url_for('direct_message', username=message) }}'">
+                                Send DM
+                            </button>
+
                         </li>
                     {% endfor %}
                 {% endif %}
