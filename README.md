@@ -5,5 +5,5 @@
 - The DM user list will also require a refresh when a new user logs in to see the option to DM them.
 - **WebSockets are used for direct messaging: after clicking to send a DM, the messaging page updates in realtime.**
   
-#Website link : (need to update)
+#Website link : https://8san.xyz/ 
   
