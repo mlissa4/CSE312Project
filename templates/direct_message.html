@@ -15,10 +15,14 @@
         </div>
         <input id="message-input" type="text">
         <button onclick="sendMessage()">Send</button>
+        <button class="return" onclick="window.location.href='/'">Return</button>
     </div>
 
 <script>
-    var socket = io.connect('http://localhost:8080', {transports: ['websocket'] });
+    var usernam = "{{ username }}"
+    var socket = io.connect('http://localhost:8080', {transports: ['websocket'], query: {username: usernam}});
+
+    
     socket.on('message', function(message_data) {
         var messageElement = document.createElement('div');
         messageElement.classList.add('message');

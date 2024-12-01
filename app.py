@@ -34,6 +34,7 @@ dm_message = db["dm"] #dm storage
 app = Flask(__name__)
 socketio = SocketIO(app, threaded=True) #sockets with multi threading
 user_online = {} #storage of all the active members
+text_key_master = {}
 connect('user_auth', host='mongo', port=27017) #path is user_auth
 app.config['MONGO_URI'] = 'mongodb://localhost:27017/user_auth' #go into user_auth collection
 app.config["SECRET_KEY"] = os.getenv("secret_key") #scecret key is just a random hex can be changed to anything
@@ -382,20 +383,44 @@ def direct_message(username):
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         finding = auth.find_one({"auth_token": hash_cookie_auth})
         if finding:
+            sender_username = finding["username"]
+            print("finding of reciever username: ", username)
+            global_reciever = username
+            key = message_finder(sender_username, username)
+            if(key == None):
+                text_key_master[sender_username+username] = 1
+                dm_message.insert_one({"key":sender_username+username, "message_list": [[]]})
             return render_template('direct_message.html', username=username)
+
         else:
             flash("Please login to send a DM", "post_permission")
             return redirect("/", code=302)
     else:
         flash("Please login to send a DM", "post_permission")
         return redirect("/", code=302)
-#establish empty 101 
+
+
+def message_finder(sender, reciever):
+    messages_object = None
+    key = sender+reciever
+    messages_object = dm_message.find_one({"key":key})
+    
+    if(messages_object == None):
+        key= reciever+sender
+        messages_object = dm_message.find_one({"key":key})
+    if(messages_object == None):
+        return None
+    text_key_master[key] = 1
+    return key
+
+#called when socket is established    
 @socketio.on("connect")
 def activity_adder():
     print("reached ")
     cookie_auth=request.cookies.get("auth_token")
     finding = None
     username = ""
+    reciever_username = request.args.get("username")
     if cookie_auth:
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         finding = auth.find_one({"auth_token": hash_cookie_auth})
@@ -404,17 +429,25 @@ def activity_adder():
             username = finding["username"]
             if (username not in user_online):
                 user_online[username] = [request.sid]
+            
             else:
                 temp = user_online[username]
                 temp.append(request.sid)
                 user_online[username] = temp
-            print("user_online: ", user_online)
+            if(reciever_username != None):
+                key = message_finder(reciever_username, username)
+                message_object = dm_message.find_one({"key": key})
+                print("message_oject type: ", message_object)
+                for text in message_object["message_list"]:
+                    if(len(text) != 0):
+                        socketio.emit("message", {"username":text[0], "message":text[1]}, room=request.sid)
+                
         else:
             return redirect("/", code=302)
     else:
         return redirect("/", code=302)
 
-
+#called when socket is disconnected (will be deleted from active user)
 @socketio.on('disconnect')
 def websocket_disconnect():
     print("disconnect is triggered")
@@ -447,12 +480,19 @@ def handle_messages(message_data):
             sender_username = finding["username"]
             reciever = message_data.get("username")
             print("activity in send_message: ", user_online)
-            reciever_lis = user_online[reciever]
             sender_lis = user_online[sender_username]
+            key = message_finder(sender_username, reciever)
+            message_object = dm_message.find_one({"key": key})
+            message_list = message_object["message_list"]
+            message_list.append([sender_username, message_data.get("message")])
+            dm_message.replace_one({"key":key},{"key":key, "message_list": message_list})
             for sender in sender_lis:
                 socketio.emit("message", {"username":sender_username, "message":message_data.get("message")}, room=sender)
-            for i in reciever_lis:
-                socketio.emit("message", {"username":sender_username, "message":message_data.get("message")}, room=i)
+            if reciever in user_online:
+                reciever_lis = user_online[reciever]
+                for i in reciever_lis:
+                    socketio.emit("message", {"username":sender_username, "message":message_data.get("message")}, room=i)
+            
             
 
 @app.route('/post_redirect', methods=["GET"])
