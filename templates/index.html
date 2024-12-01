@@ -9,7 +9,7 @@
     <div class="nav_bar">
         <div class="nav_container">
             <div class="logo">
-                    <img src="{{ url_for('kitty_image', filename='download.jpg') }}" alt="Kitty">
+                    <img src="{{ url_for('kitty_image', filename='8san logo.png') }}" alt="8san">
                 <h1>Dress Up Kitty</h1>
             </div>
             <div class="nav_buttons">
@@ -33,7 +33,7 @@
     </div>
 
     <div class="main">
-        <h1>Welcome to Dress Up Kitty! {{ username }}</h1>
+        <h1>Welcome to 8san! {{ username }}</h1>
         <div class="flash">
             {% with messages = get_flashed_messages(with_categories=True) %}
                 {% if messages %}
