@@ -155,7 +155,6 @@ def register():
 def serve_css(filename):
     response = make_response(send_file(f'static/css/{filename}'))
     response.headers['Content-Type'] = 'text/css'
-    response.headers['Cache-Control'] = 'no-store, no-cache'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 
@@ -163,7 +162,6 @@ def serve_css(filename):
 def serve_js(filename):
     response = make_response(send_file(f'static/js/{filename}'))
     response.headers['Content-Type'] = 'text/javascript'
-    response.headers['Cache-Control'] = 'no-store, no-cache'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 
@@ -174,7 +172,6 @@ def kitty_image(filename):
         abort(404, description="File not found")
     response = make_response(send_file(file_path))
     response.headers['Content-Type'] = 'image/jpeg'  # Adjust Content-Type if necessary
-    response.headers['Cache-Control'] = 'no-store, no-cache'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 
@@ -196,7 +193,6 @@ def serve_image(filename):
 
     response = make_response(send_file(f'static/uploads/{filename}'))
     response.headers['Content-Type'] = f'image/{mimetype}'
-    response.headers['Cache-Control'] = 'no-store, no-cache'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 
@@ -273,11 +269,7 @@ def uploadimage():
     description = request.form['description']
     print("filetype: ", filetype)
     if filetype == "":
-        img_sign = img_sign[8:]
-        if (img_sign.startswith("6674797069736F6D") or (img_sign.startswith("66747970"))):
-            filetype = "mp4"
-        else:
-            flash('Error: incorect image format')
+            print("kicked out")
             return redirect("/", code=302)
 
     if not image and not description:
