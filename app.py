@@ -36,7 +36,7 @@ socketio = SocketIO(app, threaded=True) #sockets with multi threading
 user_online = {} #storage of all the active members
 text_key_master = {}
 connect('user_auth', host='mongo', port=27017) #path is user_auth
-app.config['MONGO_URI'] = 'mongodb://localhost:27017/user_auth' #go into user_auth collection
+app.config['MONGO_URI'] = os.getenv("MONGO_URI", "mongodb://localhost:27017/user_auth")#go into user_auth collection
 app.config["SECRET_KEY"] = os.getenv("secret_key") #scecret key is just a random hex can be changed to anything
 app.config["SECURITY_PASSWORD_SALT"] = os.getenv("salt") #  seond layer of salt along with the first layer of salt using brcypt is just a random hex can be changed to anything
 app.config['SECURITY_REGISTERABLE'] = False
