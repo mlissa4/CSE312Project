@@ -20,7 +20,8 @@
 
 <script>
     var usernam = "{{ username }}"
-    var socket = io.connect('http://localhost:8080', {transports: ['websocket'], query: {username: usernam}});
+    // fixing local host thing
+    var socket = io.connect(`${window.location.protocol}//${window.location.hostname}:8080`, {transports: ['websocket'],query: { username: usernam }});
 
     
     socket.on('message', function(message_data) {
