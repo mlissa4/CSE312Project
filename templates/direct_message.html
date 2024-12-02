@@ -21,16 +21,20 @@
 <script>
     var usernam = "{{ username }}"
     // fixing local host thing
-    var socket = io.connect(`${window.location.protocol}//${window.location.hostname}`, {transports: ['websocket'],query: { username: usernam }});
+    var socket = io.connect("http://localhost:8080", {transports: ['websocket'],query: { username: usernam }});
 
     
     socket.on('message', function(message_data) {
-        var messageElement = document.createElement('div');
-        messageElement.classList.add('message');
-        messageElement.textContent = `${message_data.username}: ${message_data.message}`;
-        document.getElementById('messages').appendChild(messageElement);
-        var messagesBox = document.getElementById('messages');
-        messagesBox.scrollTop = messagesBox.scrollHeight;
+        var username = "{{ username }}";
+        if(message_data.recipient == username){
+            var messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.textContent = `${message_data.username}: ${message_data.message}`;
+            document.getElementById('messages').appendChild(messageElement);
+            var messagesBox = document.getElementById('messages');
+            messagesBox.scrollTop = messagesBox.scrollHeight;
+        }
+
     });
     function sendMessage() {
         var messageInput = document.getElementById('message-input');

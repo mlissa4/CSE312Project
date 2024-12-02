@@ -438,7 +438,7 @@ def activity_adder():
                 print("message_oject type: ", message_object)
                 for text in message_object["message_list"]:
                     if(len(text) != 0):
-                        socketio.emit("message", {"username":text[0], "message":text[1]}, room=request.sid)
+                        socketio.emit("message", {"username":text[0], "message":text[1], "recipient":reciever_username}, room=request.sid)
                 
         else:
             return redirect("/", code=302)
@@ -484,12 +484,15 @@ def handle_messages(message_data):
             message_list = message_object["message_list"]
             message_list.append([sender_username, message_data.get("message")])
             dm_message.replace_one({"key":key},{"key":key, "message_list": message_list})
+            temp  = reciever
             for sender in sender_lis:
-                socketio.emit("message", {"username":sender_username, "message":message_data.get("message")}, room=sender)
+                socketio.emit("message", {"username":sender_username, "message":message_data.get("message"), "recipient":temp}, room=sender)
             if reciever in user_online:
                 reciever_lis = user_online[reciever]
                 for i in reciever_lis:
-                    socketio.emit("message", {"username":sender_username, "message":message_data.get("message")}, room=i)
+                    print("temp: ",temp)
+                    print("username in send_message: ",  i)
+                    socketio.emit("message", {"username":sender_username, "message":message_data.get("message"), "recipient":temp}, room=i)
             
             
 
