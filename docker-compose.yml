@@ -4,7 +4,6 @@ services:
     image: mongo:4.2.5
     networks:
       - app_network
-
   app:
     build: .
     environment: 
