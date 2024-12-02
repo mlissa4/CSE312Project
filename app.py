@@ -386,7 +386,7 @@ def direct_message(username):
             global_reciever = username
             key = message_finder(sender_username, username)
             if(key == None):
-                text_key_master[sender_username+username] = 1
+                text_key_master[sender_username+username] = [sender_username, username]
                 dm_message.insert_one({"key":sender_username+username, "message_list": [[]]})
             return render_template('direct_message.html', username=username)
 
@@ -408,7 +408,7 @@ def message_finder(sender, reciever):
         messages_object = dm_message.find_one({"key":key})
     if(messages_object == None):
         return None
-    text_key_master[key] = 1
+    text_key_master[key] = [sender,reciever]
     return key
 
 #called when socket is established    
@@ -438,7 +438,8 @@ def activity_adder():
                 print("message_oject type: ", message_object)
                 for text in message_object["message_list"]:
                     if(len(text) != 0):
-                        socketio.emit("message", {"username":text[0], "message":text[1]}, room=request.sid)
+                        
+                        socketio.emit("message", {"username":text[0], "message":text[1], "recipient":reciever_username, "key":key, "dict": text_key_master }, room=request.sid)
                 
         else:
             return redirect("/", code=302)
@@ -484,12 +485,15 @@ def handle_messages(message_data):
             message_list = message_object["message_list"]
             message_list.append([sender_username, message_data.get("message")])
             dm_message.replace_one({"key":key},{"key":key, "message_list": message_list})
+            temp  = reciever
             for sender in sender_lis:
-                socketio.emit("message", {"username":sender_username, "message":message_data.get("message")}, room=sender)
+                socketio.emit("message", {"username":sender_username, "message":message_data.get("message"), "recipient":temp, "key": key, "dict": text_key_master}, room=sender)
             if reciever in user_online:
                 reciever_lis = user_online[reciever]
                 for i in reciever_lis:
-                    socketio.emit("message", {"username":sender_username, "message":message_data.get("message")}, room=i)
+                    print("temp: ",temp)
+                    print("username in send_message: ",  i)
+                    socketio.emit("message", {"username":sender_username, "message":message_data.get("message"), "recipient":temp, "key":key, "dict": text_key_master}, room=i)
             
             
 
