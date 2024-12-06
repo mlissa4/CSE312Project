@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+    <title>My Profile</title>
+</head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+<script src="/static/js/websocket.js"></script>
+<body>
+    <!-- Navbar -->
+    <div class="nav_bar">
+        <div class="nav_container">
+            <div class="logo">
+                <img src="{{ url_for('kitty_image', filename='8san logo.png') }}" alt="8san">
+                <h1>8San</h1>
+            </div>
+            <div class="nav_buttons">
+                <button onclick="window.location.href='/login_page'">Register/Login</button>
+                <button id="logout" onclick="logoutFeature()">Logout</button>
+                <button onclick="window.location.href='/post_redirect'">Posting</button>
+                <button onclick="window.location.href='/user_list'">DM</button>
+                <button onclick="window.location.href='/profile'">My profile</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Profile Section -->
+    <div class="main">
+        <h1>My Profile</h1>
+        <div class="profile_section">
+            <!-- Display Current Profile Picture -->
+            <div class="profile_picture">
+                pfp
+            </div>
+
+            <!-- Form to Upload New Profile Picture -->
+            <form action="/upload_profile_picture" method="POST" enctype="multipart/form-data">
+                <label for="profile_picture">Upload a new profile picture:</label><br>
+                <input type="file" name="profile_picture" id="profile_picture" accept="image/*" required><br>
+                <button type="submit">Upload</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/profile.js"></script>
+</body>
+</html>

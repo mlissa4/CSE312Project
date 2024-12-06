@@ -13,7 +13,10 @@ import secrets
 import hashlib
 import uuid
 import html
+import pytz
+from datetime import datetime, timedelta
 from PIL import Image, ImageSequence
+from profilepage import serve_profile_page, profile_bp
 from mongoengine.fields import (
     BinaryField,
     BooleanField,
@@ -24,7 +27,8 @@ from mongoengine.fields import (
     StringField,
 )
 
-
+# Set timezone to EST
+est = pytz.timezone('America/New_York')
 mongo_clinet = MongoClient('mongo')
 db = mongo_clinet["user_auth"]
 auth= db["auth"] #to access this database is the same way you do for the homework 
@@ -43,6 +47,7 @@ app.config['SECURITY_REGISTERABLE'] = False
 app.config['SESSION_PROTECTION'] = None
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.register_blueprint(profile_bp)
 
 mongo = PyMongo(app)
 #Don't worry about this part, is from a library documentation
@@ -114,6 +119,7 @@ def home():
     if(finding != None): #test to see if the auth_token is legit
         user_name = finding["username"]
     posts = list(posts_db.find())
+    posts_db.delete_many({"expiration_datetime": {"$lt": datetime.now(est)}})
     return render_template('index.html',posts=posts, username= user_name+"!")
 
 
@@ -321,6 +327,19 @@ def uploadimage():
     print(f"AUTHOR === {author}")
     Reviewers = []
     Reviewers.append(author)
+
+    # Experation time
+    expiration_time = float(request.form['expiration_time'])
+    print(f"EXPERATION TIME = {expiration_time}")
+    if expiration_time == 0:
+        expiration_datetime = None  # Indicating a post that never expires
+    else:
+        expiration_datetime = datetime.now(est) + timedelta(hours=expiration_time)
+
+    print(f"Current Time (EST): {datetime.now(est)}")
+    print(f"Expiration Time (EST): {expiration_datetime}")
+
+
     data = {
         "file_name": image_filename,
         "Description": description,
@@ -328,18 +347,18 @@ def uploadimage():
         "Total_rating": 5,
         "reviews": 1,
         "Average_rating": 5,
-        "Reviwers": Reviewers
+        "Reviwers": Reviewers,
+        "expiration_datetime": expiration_datetime,
+        "Author_PFP": User["pfp"]
 
     }
-    posts_db.insert_one(data)
-    files_in_upload_folder = os.listdir(app.config['UPLOAD_FOLDER'])
-    print("Files in the upload folder:")
-    for file in files_in_upload_folder:
-        print(file)
-    for thing in posts_db.find():
-        print(thing)
 
-        #Redirect back to the homepage or another route
+    posts_db.insert_one(data)
+    print("printing db entries")
+    for entry in posts_db.find():
+        print(entry)
+
+    #Redirect back to the homepage or another route
     return redirect("/", code=302)
     
 
@@ -520,6 +539,8 @@ def post_screen():
             return redirect("/", code=302)
     else:
         return redirect("/", code=302)
+
+
 
 @app.route('/review/<file>', methods = {"GET","POST"})
 def review_page(file):
