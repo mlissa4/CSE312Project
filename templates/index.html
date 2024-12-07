@@ -58,11 +58,12 @@
             
             <div class="description">{{ post['Description'] }}</div>
             <div class="author">Author: {{ post['Author'] }}</div>
+            <img src="{{ post['Author_PFP'] }}" alt="Image" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
             <div class="average_rating">Average Rating: {{ post['Average_rating'] }}</div>
             <div hidden class="Expiration">Expires at: {{ post['expiration_datetime'] }}</div>
             <div class="Countdown"></div>
             <div class="star">★ ★ ★ ★ ★</div>
-            
+
             <button onclick="window.location.href='/review/{{ post['file_name'] }}'">Leave a Review</button>
         </div>
         {% endfor %}

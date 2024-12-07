@@ -58,11 +58,12 @@ class Role(Document, RoleMixin):
 class User(Document, UserMixin):
     email = StringField(max_length=40,required=True,unique=True) #username
     password=StringField(required=True) #password
+    pfp = StringField(default='static/images/default_pfp.jpg')
     active=BooleanField(default=True) #active
     fs_uniquifier = StringField(max_length=64, unique=True) #another check to see if the user is unique
     roles = ListField(ReferenceField(Role), default=[]) #roles user admin, etc(will not be used yet)
 
-user_datastore= MongoEngineUserDatastore(mongo.db,User,Role)
+user_datastore = MongoEngineUserDatastore(mongo.db,User,Role)
 
 @app.route('/login', methods=["GET","POST"]) #THIS LOGIN NEEDS TO BE HERE SO IT CAN OVER WRITE THE DEFAULT LOGIN PAGE GIVEN BY FLASK SECURITY
 def login():
@@ -136,7 +137,8 @@ def register():
 
     username = request.form["username"]# For form data (if the request is from a form submission)
     # username = html.escape(username)
-    password = request.form["password"] 
+    password = request.form["password"]
+    default_pfp = os.path.join('static', 'images', 'default_pfp.jpg') 
     confirm_password= request.form["confirm_password"]
     if len(username) >=16:
         flash("username too long, please try again", "register")
@@ -149,7 +151,7 @@ def register():
         return redirect("/login_page",code=302)
     password = hash_password(password) #generates hashpassword that is salted by default (flask_security doc)
     try:
-        user_datastore.create_user(email=username, password=password) #create a user (syntax will be used once to make flask secuurity work)
+        user_datastore.create_user(email=username, password=password, pfp=default_pfp) #create a user (syntax will be used once to make flask secuurity work)
         user_datastore.commit()
     except NotUniqueError:
         flash("username is already taken , please try again", "register")
@@ -201,6 +203,14 @@ def serve_image(filename):
     response.headers['Content-Type'] = f'image/{mimetype}'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
+
+@app.route("/delete/<id>", methods=["POST"])
+def delete(id):
+    from bson.objectid import ObjectId
+    posts_db.delete_one({"_id": ObjectId(id)})
+    return redirect('/profile')
+
+
 
 #uploading images/video to the site 
 @app.route('/static/images/<filename>')
@@ -339,7 +349,7 @@ def uploadimage():
     print(f"Current Time (EST): {datetime.now(est)}")
     print(f"Expiration Time (EST): {expiration_datetime}")
 
-
+    user = user_datastore.find_user(email=author)
     data = {
         "file_name": image_filename,
         "Description": description,
@@ -349,7 +359,7 @@ def uploadimage():
         "Average_rating": 5,
         "Reviwers": Reviewers,
         "expiration_datetime": expiration_datetime,
-        "Author_PFP": User["pfp"]
+        "Author_PFP": user["pfp"]
 
     }
 
