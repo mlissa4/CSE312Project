@@ -1,4 +1,4 @@
 // fixed local host thing
-window.onload = () => {
-    const socket = io.connect(`${window.location.protocol}//${window.location.hostname}`, { transports: ['websocket'] });
+window.onload = () => { 
+    const socket = io.connect("http://localhost:8080", { transports: ['websocket'] });
 };

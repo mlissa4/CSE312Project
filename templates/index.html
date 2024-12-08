@@ -7,7 +7,6 @@
 </head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
 <script src="/static/js/websocket.js"></script>
-<script src="/static/js/time.js"></script>
 <body>
     <div class="nav_bar">
         <div class="nav_container">
@@ -20,7 +19,6 @@
                 <button id="logout" onclick="logoutFeature()">Logout</button>
                 <button onclick="window.location.href='/post_redirect'">Posting</button>
                 <button onclick="window.location.href='/user_list'">DM</button>
-                <button onclick="window.location.href='/profile'">My profile</button>
                 <div class="flash">
                     {% with messages = get_flashed_messages(with_categories=True) %}
                         {% if messages %}
@@ -58,12 +56,9 @@
             
             <div class="description">{{ post['Description'] }}</div>
             <div class="author">Author: {{ post['Author'] }}</div>
-            <img src="{{ post['Author_PFP'] }}" alt="Image" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
             <div class="average_rating">Average Rating: {{ post['Average_rating'] }}</div>
-            <div hidden class="Expiration">Expires at: {{ post['expiration_datetime'] }}</div>
-            <div class="Countdown"></div>
             <div class="star">★ ★ ★ ★ ★</div>
-
+            
             <button onclick="window.location.href='/review/{{ post['file_name'] }}'">Leave a Review</button>
         </div>
         {% endfor %}
