@@ -21,5 +21,5 @@
 5. verify your profile image has been updated
 6. go to your profile page and make note of your current stats
 7. on a second browser register a new account and leave a 1 star review on your post
-8. on your first browser refresh the porfile page and verify your stats have changed
+8. on your first browser refresh the porfile page and verify your stats have changed (some may not be accurate but that's ok)
 9. on your first browser delete your post, refresh both pages on both browsers, verify post has been deleted and your stats have changed
