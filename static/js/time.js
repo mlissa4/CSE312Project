@@ -8,7 +8,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (isNaN(Expiration.getTime())) {
             return;
         }
-        // Countdown
         function Countdown() {
             const now = new Date();
             const timeDiff = Expiration - now;
@@ -22,7 +21,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 countdownElement.textContent  = "Expired";
             }
         }
-        // Repeat countdown
         Countdown();
         setInterval(Countdown, 1000);
     });
