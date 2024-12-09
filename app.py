@@ -134,6 +134,7 @@ def limited(error):
     if ip not in blocked_list:
         blocked_list[ip] = time.time()
     return "Uh Oh! Too Many Requests, Please wait 30 secs.", 429
+
 @app.before_request
 def blocking():
     ip = get_remote_address()
