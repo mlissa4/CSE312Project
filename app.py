@@ -38,7 +38,6 @@ auth= db["auth"] #to access this database is the same way you do for the homewor
 posts_db = db["posts"] #storage of image name 
 name_counter = db["counter"] #might use but we keeping the image/gif uuid random
 dm_message = db["dm"] #dm storage
-limit_tracker = db["limit"]
 app = Flask(__name__)
 socketio = SocketIO(app, threaded=True) #sockets with multi threading
 user_online = {} #storage of all the active members
@@ -53,7 +52,7 @@ app.config['SESSION_PROTECTION'] = None
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.register_blueprint(profile_bp)
-limiter = Limiter( get_remote_address, app=app, default_limits=["50 per 10 seconds"])
+limiter = Limiter( key_func=get_remote_address, app=app)
 
 mongo = PyMongo(app)
 #Don't worry about this part, is from a library documentation
@@ -116,6 +115,7 @@ def headerSecurity(response): # make sure every response has nosniff (global)
     return response
 
 @app.route('/')
+@limiter.limit("50 per 10 seconds")
 def home():
     user_name = "Please Login"
     cookie_auth = request.cookies.get("auth_token") #get auth_token
@@ -132,22 +132,20 @@ def home():
 @app.errorhandler(429)
 def limited(error):
     ip = get_remote_address()
-    finding = limit_tracker.find_one({"ip": ip})
-    if finding == None:
-        limit_tracker.insert_one({"ip":ip, "time":time.time()})
+    if ip not in blocked_list:
+        blocked_list[ip] = time.time()
     return "Uh Oh! Too Many Requests, Please wait 30 secs.", 429
 
 @app.before_request
 def blocking():
     ip = get_remote_address()
     time_now = time.time()
-    finding = limit_tracker.find_one({"ip": ip})
-    if finding:
-        ip_time = finding["time"]
+    if ip in blocked_list:
+        ip_time = blocked_list[ip]
         if (30 > (time_now - ip_time)):
             return "Uh Oh! Too Many Requests, Please wait 30 secs.", 429
         else:
-            limit_tracker.delete_one({"ip":ip})
+            blocked_list.pop(ip)
             
 
 
