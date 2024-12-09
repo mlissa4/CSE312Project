@@ -14,6 +14,9 @@ import hashlib
 import uuid
 import html
 import pytz
+import time
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from datetime import datetime, timedelta
 from PIL import Image, ImageSequence
 from profilepage import serve_profile_page, profile_bp
@@ -38,6 +41,7 @@ dm_message = db["dm"] #dm storage
 app = Flask(__name__)
 socketio = SocketIO(app, threaded=True) #sockets with multi threading
 user_online = {} #storage of all the active members
+blocked_list = {}
 text_key_master = {}
 connect('user_auth', host='mongo', port=27017) #path is user_auth
 app.config['MONGO_URI'] = os.getenv("MONGO_URI", "mongodb://localhost:27017/user_auth")#go into user_auth collection
@@ -48,6 +52,7 @@ app.config['SESSION_PROTECTION'] = None
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.register_blueprint(profile_bp)
+limiter = Limiter( get_remote_address, app=app, default_limits=["50 per 10 seconds"])
 
 mongo = PyMongo(app)
 #Don't worry about this part, is from a library documentation
@@ -83,7 +88,7 @@ def login():
     hash_auth_token = hashlib.sha256(auth_token.encode()).hexdigest()
     auth.insert_one({"username": username, "auth_token": hash_auth_token})
     response = Response(status=302,headers={"Location":"/"})
-    response.set_cookie("auth_token",auth_token,httponly=True, max_age=360000)
+    response.set_cookie("auth_token",auth_token,httponly=True, max_age=360000, secure=True)
     return response
 #logout
 @app.route('/logout', methods=["GET","POST"]) #this also must be before startup of security
@@ -122,6 +127,24 @@ def home():
     posts = list(posts_db.find())
     posts_db.delete_many({"expiration_datetime": {"$lt": datetime.now(est)}})
     return render_template('index.html',posts=posts, username= user_name+"!")
+@app.errorhandler(429)
+def limited(error):
+    ip = get_remote_address()
+    if ip not in blocked_list:
+        blocked_list[ip] = time.time()
+    return "Uh Oh! Too Many Requests, Please wait 30 secs.", 429
+@app.before_request
+def blocking():
+    ip = get_remote_address()
+    time_now = time.time()
+    if ip in blocked_list:
+        ip_time = blocked_list[ip]
+        if (30 > (time_now - ip_time)):
+            return "Uh Oh! Too Many Requests, Please wait 30 secs.", 429
+        else:
+            blocked_list.pop(ip)
+            
+
 
 
 @app.route('/login_page')
@@ -134,7 +157,6 @@ def login_page():
 #register
 @app.route('/register', methods=["POST"]) 
 def register():
-
     username = request.form["username"]# For form data (if the request is from a form submission)
     # username = html.escape(username)
     password = request.form["password"]
@@ -574,7 +596,7 @@ def review_page(file):
         print("GETING REVIEW !!!!!!!!!!!!!!!!")
         print(f"Reviwers BEFORE {Reviwers}")
         print(f"USER THAT MADE REVIEW {User['username']}")
-        rating = int(request.form.get('rating'))
+        rating = int(float(request.form.get('rating')))
         total_rating = post.get('Total_rating', 0) + rating
         review_count = post.get('reviews', 0) + 1
         average_rating = round(total_rating/review_count,1)
