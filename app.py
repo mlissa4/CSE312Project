@@ -38,6 +38,7 @@ auth= db["auth"] #to access this database is the same way you do for the homewor
 posts_db = db["posts"] #storage of image name 
 name_counter = db["counter"] #might use but we keeping the image/gif uuid random
 dm_message = db["dm"] #dm storage
+limit_tracker = db["limit"]
 app = Flask(__name__)
 socketio = SocketIO(app, threaded=True) #sockets with multi threading
 user_online = {} #storage of all the active members
@@ -131,20 +132,22 @@ def home():
 @app.errorhandler(429)
 def limited(error):
     ip = get_remote_address()
-    if ip not in blocked_list:
-        blocked_list[ip] = time.time()
+    finding = limit_tracker.find_one({"ip": ip})
+    if finding == None:
+        limit_tracker.insert_one({"ip":ip, "time":time.time()})
     return "Uh Oh! Too Many Requests, Please wait 30 secs.", 429
 
 @app.before_request
 def blocking():
     ip = get_remote_address()
     time_now = time.time()
-    if ip in blocked_list:
-        ip_time = blocked_list[ip]
+    finding = limit_tracker.find_one({"ip": ip})
+    if finding:
+        ip_time = finding["time"]
         if (30 > (time_now - ip_time)):
             return "Uh Oh! Too Many Requests, Please wait 30 secs.", 429
         else:
-            blocked_list.pop(ip)
+            limit_tracker.delete_one({"ip":ip})
             
 
 
