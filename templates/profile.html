@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+    <title>My Profile</title>
+</head>
+
+<body>
+    <div class="nav_bar">
+        <div class="nav_container">
+            <div class="logo">
+                <button style="outline: none;" onclick="window.location.href='/'">
+                    <img src="{{ url_for('kitty_image', filename='8san logo.png') }}" alt="8san">
+                </button>
+                <h1>8San</h1>
+            </div>
+            <div class="nav_buttons">
+                <button onclick="window.location.href='/login_page'">Register/Login</button>
+                <button id="logout" onclick="logoutFeature()">Logout</button>
+                <button onclick="window.location.href='/post_redirect'">Posting</button>
+                <button onclick="window.location.href='/user_list'">DM</button>
+            </div>
+        </div>
+    </div>
+    <div class="main">
+        <h1>Welcome, {{ username }}</h1>
+        <div class="profile_section">
+            <div class="profile_picture">
+                <img src="{{ pfp }}" alt="Profile Picture" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
+            </div>
+            <div class="stats">
+                <p>Active Posts: {{ stats.active_posts }}</p>
+                <p>Total Stars: {{ stats.total_stars }}</p>
+                <p>Total Reviews: {{ stats.total_reviews }}</p>
+                <p>Average Rating: {{ stats.average|round(2) }}</p>
+            </div>
+
+            <form action="/profile/upload" method="POST" enctype="multipart/form-data">
+                <input type="file" name="image" accept="image/*" required>
+                <label for="profile_picture">Upload a new profile picture:</label><br>
+                <button type="submit">Upload</button>
+            </form>
+        </div>
+
+        <h2>Your Posts</h2>
+        <div class="gallery">
+            {% for post in posts %}
+            <div class="image_box">
+
+                <img src="{{ url_for('static', filename='uploads/' + post['file_name']) }}" alt="Image">
+                <div class="description">{{ post['Description'] }}</div>
+                <img src="{{ post['Author_PFP'] }}" alt="Image" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
+                <div class="average_rating">Average Rating: {{ post['Average_rating'] }}</div>
+                <div hidden class="Expiration">Expires at: {{ post['expiration_datetime'] }}</div>
+                <div class="Countdown"></div>
+                <div class="star">★ ★ ★ ★ ★</div>
+                <form method="POST" action="/delete/{{ post['_id'] }}">
+                    <button type="submit">Delete Post</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

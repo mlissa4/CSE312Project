@@ -13,7 +13,13 @@ import secrets
 import hashlib
 import uuid
 import html
+import pytz
+import time
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from datetime import datetime, timedelta
 from PIL import Image, ImageSequence
+from profilepage import serve_profile_page, profile_bp
 from mongoengine.fields import (
     BinaryField,
     BooleanField,
@@ -24,7 +30,8 @@ from mongoengine.fields import (
     StringField,
 )
 
-
+# Set timezone to EST
+est = pytz.timezone('America/New_York')
 mongo_clinet = MongoClient('mongo')
 db = mongo_clinet["user_auth"]
 auth= db["auth"] #to access this database is the same way you do for the homework 
@@ -34,15 +41,18 @@ dm_message = db["dm"] #dm storage
 app = Flask(__name__)
 socketio = SocketIO(app, threaded=True) #sockets with multi threading
 user_online = {} #storage of all the active members
+blocked_list = {}
 text_key_master = {}
 connect('user_auth', host='mongo', port=27017) #path is user_auth
-app.config['MONGO_URI'] = 'mongodb://localhost:27017/user_auth' #go into user_auth collection
+app.config['MONGO_URI'] = os.getenv("MONGO_URI", "mongodb://localhost:27017/user_auth")#go into user_auth collection
 app.config["SECRET_KEY"] = os.getenv("secret_key") #scecret key is just a random hex can be changed to anything
 app.config["SECURITY_PASSWORD_SALT"] = os.getenv("salt") #  seond layer of salt along with the first layer of salt using brcypt is just a random hex can be changed to anything
 app.config['SECURITY_REGISTERABLE'] = False
 app.config['SESSION_PROTECTION'] = None
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.register_blueprint(profile_bp)
+limiter = Limiter( get_remote_address, app=app, default_limits=["50 per 10 seconds"])
 
 mongo = PyMongo(app)
 #Don't worry about this part, is from a library documentation
@@ -53,11 +63,12 @@ class Role(Document, RoleMixin):
 class User(Document, UserMixin):
     email = StringField(max_length=40,required=True,unique=True) #username
     password=StringField(required=True) #password
+    pfp = StringField(default='static/images/default_pfp.jpg')
     active=BooleanField(default=True) #active
     fs_uniquifier = StringField(max_length=64, unique=True) #another check to see if the user is unique
     roles = ListField(ReferenceField(Role), default=[]) #roles user admin, etc(will not be used yet)
 
-user_datastore= MongoEngineUserDatastore(mongo.db,User,Role)
+user_datastore = MongoEngineUserDatastore(mongo.db,User,Role)
 
 @app.route('/login', methods=["GET","POST"]) #THIS LOGIN NEEDS TO BE HERE SO IT CAN OVER WRITE THE DEFAULT LOGIN PAGE GIVEN BY FLASK SECURITY
 def login():
@@ -77,7 +88,7 @@ def login():
     hash_auth_token = hashlib.sha256(auth_token.encode()).hexdigest()
     auth.insert_one({"username": username, "auth_token": hash_auth_token})
     response = Response(status=302,headers={"Location":"/"})
-    response.set_cookie("auth_token",auth_token,httponly=True, max_age=360000)
+    response.set_cookie("auth_token",auth_token,httponly=True, max_age=360000, secure=True)
     return response
 #logout
 @app.route('/logout', methods=["GET","POST"]) #this also must be before startup of security
@@ -113,8 +124,29 @@ def home():
     finding = auth.find_one({"auth_token":hash_cookie_auth})
     if(finding != None): #test to see if the auth_token is legit
         user_name = finding["username"]
+    posts_db.delete_many({"expiration_datetime": {"$lt": datetime.now(est)}})
     posts = list(posts_db.find())
     return render_template('index.html',posts=posts, username= user_name+"!")
+
+@app.errorhandler(429)
+def limited(error):
+    ip = get_remote_address()
+    if ip not in blocked_list:
+        blocked_list[ip] = time.time()
+    return "Uh Oh! Too Many Requests, Please wait 30 secs.", 429
+
+@app.before_request
+def blocking():
+    ip = get_remote_address()
+    time_now = time.time()
+    if ip in blocked_list:
+        ip_time = blocked_list[ip]
+        if (30 > (time_now - ip_time)):
+            return "Uh Oh! Too Many Requests, Please wait 30 secs.", 429
+        else:
+            blocked_list.pop(ip)
+            
+
 
 
 @app.route('/login_page')
@@ -127,10 +159,10 @@ def login_page():
 #register
 @app.route('/register', methods=["POST"]) 
 def register():
-
     username = request.form["username"]# For form data (if the request is from a form submission)
     # username = html.escape(username)
-    password = request.form["password"] 
+    password = request.form["password"]
+    default_pfp = os.path.join('static', 'images', 'default_pfp.jpg') 
     confirm_password= request.form["confirm_password"]
     if len(username) >=16:
         flash("username too long, please try again", "register")
@@ -143,7 +175,7 @@ def register():
         return redirect("/login_page",code=302)
     password = hash_password(password) #generates hashpassword that is salted by default (flask_security doc)
     try:
-        user_datastore.create_user(email=username, password=password) #create a user (syntax will be used once to make flask secuurity work)
+        user_datastore.create_user(email=username, password=password, pfp=default_pfp) #create a user (syntax will be used once to make flask secuurity work)
         user_datastore.commit()
     except NotUniqueError:
         flash("username is already taken , please try again", "register")
@@ -195,6 +227,14 @@ def serve_image(filename):
     response.headers['Content-Type'] = f'image/{mimetype}'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
+
+@app.route("/delete/<id>", methods=["POST"])
+def delete(id):
+    from bson.objectid import ObjectId
+    posts_db.delete_one({"_id": ObjectId(id)})
+    return redirect('/profile')
+
+
 
 #uploading images/video to the site 
 @app.route('/static/images/<filename>')
@@ -321,6 +361,19 @@ def uploadimage():
     print(f"AUTHOR === {author}")
     Reviewers = []
     Reviewers.append(author)
+
+    # Experation time
+    expiration_time = float(request.form['expiration_time'])
+    print(f"EXPERATION TIME = {expiration_time}")
+    if expiration_time == 0:
+        expiration_datetime = None  # Indicating a post that never expires
+    else:
+        expiration_datetime = datetime.now(est) + timedelta(hours=expiration_time)
+
+    print(f"Current Time (EST): {datetime.now(est)}")
+    print(f"Expiration Time (EST): {expiration_datetime}")
+
+    user = user_datastore.find_user(email=author)
     data = {
         "file_name": image_filename,
         "Description": description,
@@ -328,18 +381,18 @@ def uploadimage():
         "Total_rating": 5,
         "reviews": 1,
         "Average_rating": 5,
-        "Reviwers": Reviewers
+        "Reviwers": Reviewers,
+        "expiration_datetime": expiration_datetime,
+        "Author_PFP": user["pfp"]
 
     }
-    posts_db.insert_one(data)
-    files_in_upload_folder = os.listdir(app.config['UPLOAD_FOLDER'])
-    print("Files in the upload folder:")
-    for file in files_in_upload_folder:
-        print(file)
-    for thing in posts_db.find():
-        print(thing)
 
-        #Redirect back to the homepage or another route
+    posts_db.insert_one(data)
+    print("printing db entries")
+    for entry in posts_db.find():
+        print(entry)
+
+    #Redirect back to the homepage or another route
     return redirect("/", code=302)
     
 
@@ -521,6 +574,8 @@ def post_screen():
     else:
         return redirect("/", code=302)
 
+
+
 @app.route('/review/<file>', methods = {"GET","POST"})
 def review_page(file):
     User = None
@@ -543,7 +598,7 @@ def review_page(file):
         print("GETING REVIEW !!!!!!!!!!!!!!!!")
         print(f"Reviwers BEFORE {Reviwers}")
         print(f"USER THAT MADE REVIEW {User['username']}")
-        rating = int(request.form.get('rating'))
+        rating = int(float(request.form.get('rating')))
         total_rating = post.get('Total_rating', 0) + rating
         review_count = post.get('reviews', 0) + 1
         average_rating = round(total_rating/review_count,1)
@@ -554,4 +609,6 @@ def review_page(file):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
+    posts_db.delete_many({})
+
 
