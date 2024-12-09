@@ -13,13 +13,13 @@
 - Once logged in users can navigate to their profile page to upload a new profile picture, delete any of thier own posts, and view the stats on all of thier current posts.
 
 
-# To test this procedure
+# To test this procedure 
 1. Start your server using docker compose up
 2. Register and Login to the site using the register button on the top right
 3. make a post using the post button and verify that a default grey profile picture is visable under your post
 4. navigate to the profile page and upload an image as a jpg, gif or png
-5. verify your profile image has been updated
-6. go to your profile page and make note of your current stats
+5. verify your profile image has been updated (refresh page if necessary)
+6. go to your profile page and make note of your current stats ((refresh page if necessary and some stats may not be accurate but that is ok)
 7. on a second browser register a new account and leave a 1 star review on your post
 8. on your first browser refresh the porfile page and verify your stats have changed (some may not be accurate but that's ok)
-9. on your first browser delete your post, refresh both pages on both browsers, verify post has been deleted and your stats have changed
+9. on your first browser delete your post, refresh both pages on both browsers, verify post has been deleted and your stats have changed 
