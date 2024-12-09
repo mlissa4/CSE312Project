@@ -124,9 +124,10 @@ def home():
     finding = auth.find_one({"auth_token":hash_cookie_auth})
     if(finding != None): #test to see if the auth_token is legit
         user_name = finding["username"]
-    posts = list(posts_db.find())
     posts_db.delete_many({"expiration_datetime": {"$lt": datetime.now(est)}})
+    posts = list(posts_db.find())
     return render_template('index.html',posts=posts, username= user_name+"!")
+
 @app.errorhandler(429)
 def limited(error):
     ip = get_remote_address()

@@ -17,13 +17,11 @@ def serve_profile_page():
     from app import user_datastore, posts_db
     username = get_user(request)
     cookie_auth = request.cookies.get("auth_token")
-    User = None
     finding = None
     if cookie_auth:
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         finding = auth.find_one({"auth_token": hash_cookie_auth})
         if finding:
-            User = finding["username"]
             user = user_datastore.find_user(email=username)
             users_posts = list(posts_db.find({"Author": username}))
             return render_template('profile.html', pfp=user.pfp, posts=users_posts, stats=user_stats(users_posts),username=username)
@@ -32,6 +30,8 @@ def serve_profile_page():
     
     else:
         return redirect("/", code=302)
+    
+
 #check the signature of the image/video
 def sign_checker(img_sign):
     sign_dict = {
@@ -46,6 +46,7 @@ def sign_checker(img_sign):
             if(img_sign.startswith(signature)):
                 return sign
     return ""
+
 @profile_bp.route('/profile/upload', methods=['POST'])
 def upload_pfp():
     cookie_auth = request.cookies.get("auth_token")

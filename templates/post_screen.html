@@ -15,12 +15,12 @@
             <textarea name="description" maxlength="256" rows="4" placeholder="Add a description..." required></textarea>
             <label for="expiration_time">Set Post Expiration:</label>
             <select name="expiration_time" id="expiration_time" required>
+                <option value="0">Forever</option>
                 <option value="0.01666666667">1 Minute</option>
                 <option value=".5">30 Minutes</option>
                 <option value="1">1 Hour</option>
                 <option value="12">12 Hours</option>
                 <option value="24">24 Hours</option>
-                <option value="0">Forever</option>
             </select>
             <button type="submit">Submit</button>
         </form>
