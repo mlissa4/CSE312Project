@@ -34,8 +34,8 @@ from mongoengine.fields import (
 est = pytz.timezone('America/New_York')
 mongo_clinet = MongoClient('mongo')
 db = mongo_clinet["user_auth"]
-auth= db["auth"] #to access this database is the same way you do for the homework 
-posts_db = db["posts"] #storage of image name 
+auth= db["auth"] #to access this database is the same way you do for the homework
+posts_db = db["posts"] #storage of image name
 name_counter = db["counter"] #might use but we keeping the image/gif uuid random
 dm_message = db["dm"] #dm storage
 app = Flask(__name__)
@@ -47,17 +47,23 @@ connect('user_auth', host='mongo', port=27017) #path is user_auth
 app.config['MONGO_URI'] = os.getenv("MONGO_URI", "mongodb://localhost:27017/user_auth")#go into user_auth collection
 app.config["SECRET_KEY"] = os.getenv("secret_key") #scecret key is just a random hex can be changed to anything
 app.config["SECURITY_PASSWORD_SALT"] = os.getenv("salt") #  seond layer of salt along with the first layer of salt using brcypt is just a random hex can be changed to anything
+app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024
 app.config['SECURITY_REGISTERABLE'] = False
 app.config['SESSION_PROTECTION'] = None
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.register_blueprint(profile_bp)
-limiter = Limiter( key_func=get_remote_address, app=app)
+def realip():
+        real = request.headers.get("X-Forwarded-For")
+        if real:
+                real = real.split(",")[0].strip()
+                return real
 
+limiter = Limiter( key_func=realip, app=app, default_limits=["50 per 10 seconds"])
 mongo = PyMongo(app)
 #Don't worry about this part, is from a library documentation
 #read more about it on flasksecurity website https://flask-security-too.readthedocs.io/en/stable/
-class Role(Document, RoleMixin): 
+class Role(Document, RoleMixin):
     name = StringField(max_length=40, unique=True)
     description = StringField()
 class User(Document, UserMixin):
@@ -69,10 +75,13 @@ class User(Document, UserMixin):
     roles = ListField(ReferenceField(Role), default=[]) #roles user admin, etc(will not be used yet)
 
 user_datastore = MongoEngineUserDatastore(mongo.db,User,Role)
-
+@app.errorhandler(413)
+def too_big(e):
+    flash("File too large! please use 8 mb or less", "post_permission")
+    return redirect("/", code=302)
 @app.route('/login', methods=["GET","POST"]) #THIS LOGIN NEEDS TO BE HERE SO IT CAN OVER WRITE THE DEFAULT LOGIN PAGE GIVEN BY FLASK SECURITY
 def login():
-   
+
     username = request.form.get("login_username")
     # username = html.escape(username)
     password = request.form.get("login_password")
@@ -93,7 +102,7 @@ def login():
 #logout
 @app.route('/logout', methods=["GET","POST"]) #this also must be before startup of security
 def logout():
-    
+
     cookie_auth = request.cookies.get("auth_token") #get auth_token
     hash_cookie_auth =""
     if(cookie_auth != None):
@@ -104,10 +113,10 @@ def logout():
     if(finding != None): #test to see if the auth_token is legit
         auth.delete_one({"auth_token":hash_cookie_auth}) #delete the auth_token by setting expires to 0
     response = Response(status=302,headers={"Location":"/"})
-    response.set_cookie("auth_token","",httponly=True, expires=0) 
-    
+    response.set_cookie("auth_token","",httponly=True, expires=0)
+
     return response
-    
+
 Security = Security(app,user_datastore) #start up flask security
 @app.after_request
 def headerSecurity(response): # make sure every response has nosniff (global)
@@ -115,7 +124,7 @@ def headerSecurity(response): # make sure every response has nosniff (global)
     return response
 
 @app.route('/')
-@limiter.limit("50 per 10 seconds")
+#@limiter.limit("50 per 10 seconds")
 def home():
     user_name = "Please Login"
     cookie_auth = request.cookies.get("auth_token") #get auth_token
@@ -131,14 +140,18 @@ def home():
 
 @app.errorhandler(429)
 def limited(error):
-    ip = get_remote_address()
+    ip = realip()
+    print("real ip plz: ", request.headers.get("X-Forwarded-For"))
+    print("blocked ip: ", ip)
+    print("blocked dict: ", blocked_list)
     if ip not in blocked_list:
         blocked_list[ip] = time.time()
     return "Uh Oh! Too Many Requests, Please wait 30 secs.", 429
 
 @app.before_request
 def blocking():
-    ip = get_remote_address()
+    ip = realip()
+    print("checking the block: ", ip)
     time_now = time.time()
     if ip in blocked_list:
         ip_time = blocked_list[ip]
@@ -146,7 +159,7 @@ def blocking():
             return "Uh Oh! Too Many Requests, Please wait 30 secs.", 429
         else:
             blocked_list.pop(ip)
-            
+
 
 
 
@@ -158,12 +171,12 @@ def login_page():
 # Redirect User to home screen on sucessfull login
 
 #register
-@app.route('/register', methods=["POST"]) 
+@app.route('/register', methods=["POST"])
 def register():
     username = request.form["username"]# For form data (if the request is from a form submission)
     # username = html.escape(username)
     password = request.form["password"]
-    default_pfp = os.path.join('static', 'images', 'default_pfp.jpg') 
+    default_pfp = os.path.join('static', 'images', 'default_pfp.jpg')
     confirm_password= request.form["confirm_password"]
     if len(username) >=16:
         flash("username too long, please try again", "register")
@@ -237,7 +250,7 @@ def delete(id):
 
 
 
-#uploading images/video to the site 
+#uploading images/video to the site
 @app.route('/static/images/<filename>')
 def serve_image2(filename):
     file_extension = filename.rsplit(".")[1].lower()
@@ -262,7 +275,7 @@ def serve_image2(filename):
 def custom_name():
     retur == None
     retur = name_counter.find_one({"counter": "counter"})
-    if retur == None : 
+    if retur == None :
         retur.insert_one({"counter": "counter", "number":"1"})
         name = "image_1"
     else:
@@ -317,7 +330,7 @@ def uploadimage():
         flash('Error: Image and description are required!')
         return redirect("/", code=302)
     image_filename = f"image_{uuid.uuid4()}.{filetype}"
-    
+
     with Image.open(image.stream) as img:
         width, height = img.size
         ratio = 0
@@ -350,7 +363,7 @@ def uploadimage():
                 resize = frame.resize((width, height))
                 new_frames.append(resize)
             new_frames[0].save(path, save_all=True, append_images=new_frames[1:])
-                
+
 
 
 
@@ -395,17 +408,17 @@ def uploadimage():
 
     #Redirect back to the homepage or another route
     return redirect("/", code=302)
-    
+
 
 #user_list page
-@app.route('/user_list', methods=["GET"]) 
+@app.route('/user_list', methods=["GET"])
 def user_list():
     cookie_auth=request.cookies.get("auth_token")
     finding = None
     if cookie_auth: #check for if there is auth_cookies
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         finding = auth.find_one({"auth_token": hash_cookie_auth})
-        if finding: #if auth_cookie is valid 
+        if finding: #if auth_cookie is valid
             users = User.objects.all()
             all_users = [user.email for user in users] #all registered usernames
             for user in all_users:
@@ -413,10 +426,10 @@ def user_list():
                     flash(f"{user}")
             return render_template("user_list.html")
         else: #if auth cookie is not valid
-          flash("Please login to use DM feature", "post_permission") 
-          return redirect("/", code=302)  
+          flash("Please login to use DM feature", "post_permission")
+          return redirect("/", code=302)
     else:
-        flash("Please login to use DM feature", "post_permission") 
+        flash("Please login to use DM feature", "post_permission")
         return redirect("/", code=302)
 
 @app.route('/direct_message/<username>', methods=["GET", "POST"])
@@ -448,7 +461,7 @@ def message_finder(sender, reciever):
     messages_object = None
     key = sender+reciever
     messages_object = dm_message.find_one({"key":key})
-    
+
     if(messages_object == None):
         key= reciever+sender
         messages_object = dm_message.find_one({"key":key})
@@ -457,7 +470,7 @@ def message_finder(sender, reciever):
     text_key_master[key] = [sender,reciever]
     return key
 
-#called when socket is established    
+#called when socket is established
 @socketio.on("connect")
 def activity_adder():
     print("reached ")
@@ -468,12 +481,12 @@ def activity_adder():
     if cookie_auth:
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         finding = auth.find_one({"auth_token": hash_cookie_auth})
-        
-        if finding: #if auth_cookie is valid 
+
+        if finding: #if auth_cookie is valid
             username = finding["username"]
             if (username not in user_online):
                 user_online[username] = [request.sid]
-            
+
             else:
                 temp = user_online[username]
                 temp.append(request.sid)
@@ -484,9 +497,9 @@ def activity_adder():
                 print("message_oject type: ", message_object)
                 for text in message_object["message_list"]:
                     if(len(text) != 0):
-                        
+
                         socketio.emit("message", {"username":text[0], "message":text[1], "recipient":reciever_username, "key":key, "dict": text_key_master }, room=request.sid)
-                
+
         else:
             return redirect("/", code=302)
     else:
@@ -502,14 +515,14 @@ def websocket_disconnect():
     if cookie_auth:
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         finding = auth.find_one({"auth_token": hash_cookie_auth})
-        if finding: #if auth_cookie is valid 
+        if finding: #if auth_cookie is valid
             username = finding["username"]
             sids = user_online[username]
             sids = sids.remove(request.sid)
-            
-        else: 
+
+        else:
             return redirect("/", code=302)
-    else: 
+    else:
         return redirect("/", code=302)
 
 @socketio.on("send_message")
@@ -518,7 +531,7 @@ def handle_messages(message_data):
     cookie_auth = request.cookies.get("auth_token")
     finding = None
     sender_username = ""
-    if cookie_auth: 
+    if cookie_auth:
         hash_cookie_auth = hashlib.sha256(cookie_auth.encode()).hexdigest()
         finding = auth.find_one({"auth_token": hash_cookie_auth})
         if finding:
@@ -540,8 +553,8 @@ def handle_messages(message_data):
                     print("temp: ",temp)
                     print("username in send_message: ",  i)
                     socketio.emit("message", {"username":sender_username, "message":message_data.get("message"), "recipient":temp, "key":key, "dict": text_key_master}, room=i)
-            
-            
+
+
 
 @app.route('/post_redirect', methods=["GET"])
 def post_redirect():
@@ -559,7 +572,7 @@ def post_redirect():
             return redirect("/", code=302)
     flash("To Post Please Login", "post_permission")
     return redirect("/", code=302)
- 
+
 
 #need to build post_screen.html
 @app.route('/post_screen')
@@ -570,7 +583,7 @@ def post_screen():
         finding = auth.find_one({"auth_token": hash_cookie_auth})
         if finding:
             return render_template('post_screen.html'), 200
-        else: 
+        else:
             return redirect("/", code=302)
     else:
         return redirect("/", code=302)
