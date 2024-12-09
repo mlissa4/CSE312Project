@@ -15,7 +15,7 @@
 4. navigate to the profile page and upload an image as a jpg, gif or png
 5. verify your profile image has been updated (refresh page if necessary)
 6. go to your profile page and make note of your current stats (stat does not need to be completely accurate)
-7. on a second browser register a new account and at the main page verify that you could see the profile picture of the uploader in the post they made.
+7. on a second browser register a new account and at the main page verify that you could see the updated profile picture of the uploader in the post they made.
 8. on the second browser leave a 1 star review on your post.
 9. return to your first browser refresh the porfile page and verify your stats have changed (stats does not need to be completely accurate)
 10. on your first browser delete your post, click on our picture(top left corner) and refresh both pages on both browsers, verify post has been deleted and your stats have changed (stats does not need to be completely accurate)
