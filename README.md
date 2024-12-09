@@ -1,5 +1,5 @@
 ### Website link : https://8san.xyz/ 
-### Project 3 part 3 dos - loading our main page uses about 3 request due to how we cache the rest of the files (304) 
+### Project 3 part 2 dos - loading our main page uses about 3 request due to how we cache the rest of the files (304) 
 
 # Project 3 Part 3 Explanation
 - Our feature for part 3 is a profile a section and post managmement for oue site. When users first register they are now given a default profile - - picture.
