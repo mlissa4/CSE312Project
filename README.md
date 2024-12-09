@@ -1,4 +1,6 @@
 ### Website link : https://8san.xyz/ 
+
+### Project 3 part 1 sense of time - option for users to set expiration date on their post (will state expired when times up and require refresh for image to disappear)
 ### Project 3 part 2 dos - loading our main page uses about 3 request due to how we cache the rest of the files (304) 
 
 # Project 3 Part 3 Explanation
